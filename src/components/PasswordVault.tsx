@@ -57,7 +57,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
     expiration_days: ''
   });
   const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
-  const [lockTimer, setLockTimer] = useState<number | null>(null);
+  const [lockTimer, setLockTimer] = useState<NodeJS.Timeout | null>(null);
   const [remainingTime, setRemainingTime] = useState<number>(0);
   const { user } = useAuth();
   const { toast } = useToast();
