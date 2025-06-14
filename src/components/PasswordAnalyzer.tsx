@@ -1,16 +1,18 @@
 
 import React, { useState } from 'react';
-import { Shield, Calculator } from 'lucide-react';
+import { Shield, Calculator, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { calculateCrackTime, calculatePasswordEntropy } from '@/utils/passwordUtils';
+import { checkPasswordBreach, getBreachCount } from '@/utils/breachChecker';
 
 const PasswordAnalyzer = () => {
   const [testPassword, setTestPassword] = useState('');
   const [analysis, setAnalysis] = useState<{
     entropy: number;
     crackTime: { seconds: number; humanReadable: string };
+    breach: { isBreached: boolean; severity: 'low' | 'medium' | 'high'; message: string };
   } | null>(null);
 
   const analyzePassword = () => {
@@ -21,8 +23,9 @@ const PasswordAnalyzer = () => {
 
     const entropy = calculatePasswordEntropy(testPassword);
     const crackTime = calculateCrackTime(testPassword);
+    const breach = checkPasswordBreach(testPassword);
     
-    setAnalysis({ entropy, crackTime });
+    setAnalysis({ entropy, crackTime, breach });
   };
 
   const getSecurityLevel = (entropy: number) => {
@@ -31,6 +34,20 @@ const PasswordAnalyzer = () => {
     if (entropy < 60) return { level: 'Fair', color: 'text-yellow-400', bg: 'bg-yellow-500' };
     if (entropy < 128) return { level: 'Strong', color: 'text-blue-400', bg: 'bg-blue-500' };
     return { level: 'Very Strong', color: 'text-green-400', bg: 'bg-green-500' };
+  };
+
+  const getBreachStatusIcon = (breach: { isBreached: boolean; severity: string }) => {
+    if (!breach.isBreached) {
+      return <CheckCircle className="w-4 h-4 text-green-400" />;
+    }
+    return <AlertTriangle className="w-4 h-4 text-red-400" />;
+  };
+
+  const getBreachStatusColor = (breach: { isBreached: boolean; severity: string }) => {
+    if (!breach.isBreached) return 'text-green-400';
+    if (breach.severity === 'high') return 'text-red-400';
+    if (breach.severity === 'medium') return 'text-orange-400';
+    return 'text-yellow-400';
   };
 
   return (
@@ -53,13 +70,30 @@ const PasswordAnalyzer = () => {
                 setTestPassword(e.target.value);
                 analyzePassword();
               }}
-              placeholder="Enter a password to check crack time"
+              placeholder="Enter a password to check crack time and breach status"
               className="glass-input border-white/20 bg-white/5 text-white placeholder:text-gray-400"
             />
           </div>
 
           {analysis && testPassword && (
             <div className="space-y-4">
+              {/* Breach Status Card */}
+              <div className="glass-option p-4 rounded-lg border border-white/10">
+                <div className="flex items-center gap-2 mb-2">
+                  {getBreachStatusIcon(analysis.breach)}
+                  <div className="text-sm text-gray-300">Breach Status</div>
+                </div>
+                <div className={`text-lg font-semibold ${getBreachStatusColor(analysis.breach)}`}>
+                  {analysis.breach.isBreached ? 'Compromised' : 'Not Found in Breaches'}
+                </div>
+                <div className="text-xs text-gray-400 mt-1">
+                  {analysis.breach.message}
+                </div>
+                <div className="text-xs text-gray-500 mt-2">
+                  Checked against {getBreachCount().toLocaleString()} common passwords
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="glass-option p-4 rounded-lg border border-white/10">
                   <div className="text-sm text-gray-300 mb-1">Entropy</div>

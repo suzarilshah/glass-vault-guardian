@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { Copy, RefreshCw, Shield, CheckCircle2 } from 'lucide-react';
+import { Copy, RefreshCw, Shield, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { calculateCrackTime } from '@/utils/passwordUtils';
+import { checkPasswordBreach } from '@/utils/breachChecker';
 import KeywordObfuscator from './KeywordObfuscator';
 import PasswordAnalyzer from './PasswordAnalyzer';
 
@@ -117,6 +118,7 @@ const PasswordGenerator = () => {
   };
 
   const generatedPasswordCrackTime = password ? calculateCrackTime(password) : null;
+  const generatedPasswordBreach = password ? checkPasswordBreach(password) : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-6">
@@ -183,15 +185,38 @@ const PasswordGenerator = () => {
               </div>
             </div>
 
-            {/* Crack Time Display */}
-            {generatedPasswordCrackTime && (
-              <div className="glass-option p-3 rounded-lg border border-white/10">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-300">Time to crack:</span>
-                  <span className="text-sm font-semibold text-green-400">
-                    {generatedPasswordCrackTime.humanReadable}
-                  </span>
-                </div>
+            {/* Breach Status and Crack Time Display */}
+            {password && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Breach Status */}
+                {generatedPasswordBreach && (
+                  <div className="glass-option p-3 rounded-lg border border-white/10">
+                    <div className="flex items-center gap-2 mb-1">
+                      {generatedPasswordBreach.isBreached ? 
+                        <AlertTriangle className="w-4 h-4 text-red-400" /> : 
+                        <CheckCircle2 className="w-4 h-4 text-green-400" />
+                      }
+                      <span className="text-sm text-gray-300">Breach Status:</span>
+                    </div>
+                    <span className={`text-sm font-semibold ${
+                      generatedPasswordBreach.isBreached ? 'text-red-400' : 'text-green-400'
+                    }`}>
+                      {generatedPasswordBreach.isBreached ? 'Compromised' : 'Safe'}
+                    </span>
+                  </div>
+                )}
+
+                {/* Crack Time */}
+                {generatedPasswordCrackTime && (
+                  <div className="glass-option p-3 rounded-lg border border-white/10">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-300">Time to crack:</span>
+                      <span className="text-sm font-semibold text-green-400">
+                        {generatedPasswordCrackTime.humanReadable}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
