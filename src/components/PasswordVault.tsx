@@ -1,16 +1,19 @@
+
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Copy, Edit, Trash2, Eye, EyeOff, Download, Save, RefreshCw, Clock, AlertTriangle, Users, Lock, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { encryptPassword, decryptPassword, hashMasterPassword } from '@/utils/encryption';
 import MasterPasswordModal from './MasterPasswordModal';
 import GroupManager from './GroupManager';
+import VaultHeader from './vault/VaultHeader';
+import TimerSettings from './vault/TimerSettings';
+import ExpiredPasswordsAlert from './vault/ExpiredPasswordsAlert';
+import GroupSidebar from './vault/GroupSidebar';
+import PasswordEntryCard from './vault/PasswordEntryCard';
+import PasswordForm from './vault/PasswordForm';
+import EmptyState from './vault/EmptyState';
 
 interface PasswordGroup {
   id: string;
@@ -121,12 +124,6 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
     }, timeoutMs);
 
     setLockTimer(newTimer);
-  };
-
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
   const checkMasterPassword = async () => {
@@ -242,17 +239,14 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
     setEntries(data || []);
   };
 
-  const generateNewPassword = (entryId: string) => {
+  const generateNewPassword = () => {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
     let newPassword = '';
     for (let i = 0; i < 16; i++) {
       newPassword += charset.charAt(Math.floor(Math.random() * charset.length));
     }
     
-    if (editingEntry?.id === entryId) {
-      setFormData(prev => ({ ...prev, password: newPassword }));
-    }
-    
+    setFormData(prev => ({ ...prev, password: newPassword }));
     return newPassword;
   };
 
@@ -260,7 +254,12 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
     if (!masterPassword) return;
 
     try {
-      const newPassword = generateNewPassword(entry.id);
+      const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+      let newPassword = '';
+      for (let i = 0; i < 16; i++) {
+        newPassword += charset.charAt(Math.floor(Math.random() * charset.length));
+      }
+
       const encryptedPassword = encryptPassword(newPassword, masterPassword);
       
       let expiresAt = entry.expires_at;
@@ -550,371 +549,75 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold text-white">Password Vault</h2>
-          <div className="flex items-center gap-2 px-3 py-1 bg-green-600/20 rounded-lg border border-green-500/30">
-            <Lock className="w-4 h-4 text-green-400" />
-            <span className="text-green-400 text-sm font-medium">
-              Auto-lock: {formatTime(remainingTime)}
-            </span>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={() => setShowTimerSettings(!showTimerSettings)}
-            variant="outline"
-            className="border-white/20 text-white hover:bg-white/10"
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            Timer
-          </Button>
-          <Button
-            onClick={() => setShowGroupManager(true)}
-            variant="outline"
-            className="border-white/20 text-white hover:bg-white/10"
-          >
-            <Users className="w-4 h-4 mr-2" />
-            Manage Groups
-          </Button>
-          <Button
-            onClick={exportPasswords}
-            variant="outline"
-            className="border-white/20 text-white hover:bg-white/10"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Export
-          </Button>
-          <Button
-            onClick={() => setShowForm(true)}
-            className="glass-button bg-green-600 hover:bg-green-700 text-white"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Password
-          </Button>
-        </div>
-      </div>
+      <VaultHeader
+        remainingTime={remainingTime}
+        onShowTimerSettings={() => setShowTimerSettings(!showTimerSettings)}
+        onShowGroupManager={() => setShowGroupManager(true)}
+        onExportPasswords={exportPasswords}
+        onShowForm={() => setShowForm(true)}
+      />
 
       {showTimerSettings && (
-        <Card className="glass-card p-4 bg-white/5 backdrop-blur-xl border-white/20">
-          <h3 className="text-lg font-semibold text-white mb-3">Auto-lock Timer Settings</h3>
-          <div className="flex items-center gap-4">
-            <label className="text-gray-300 text-sm">Lock after:</label>
-            <Select 
-              value={lockTimeoutMinutes.toString()} 
-              onValueChange={(value) => setLockTimeoutMinutes(parseInt(value))}
-            >
-              <SelectTrigger className="w-32 glass-input bg-white/5 border-white/20 text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="glass-card bg-gray-800 backdrop-blur-xl border-white/20">
-                <SelectItem value="1" className="text-white hover:bg-white/10">1 minute</SelectItem>
-                <SelectItem value="5" className="text-white hover:bg-white/10">5 minutes</SelectItem>
-                <SelectItem value="10" className="text-white hover:bg-white/10">10 minutes</SelectItem>
-                <SelectItem value="15" className="text-white hover:bg-white/10">15 minutes</SelectItem>
-                <SelectItem value="30" className="text-white hover:bg-white/10">30 minutes</SelectItem>
-                <SelectItem value="60" className="text-white hover:bg-white/10">1 hour</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              onClick={() => setShowTimerSettings(false)}
-              size="sm"
-              variant="outline"
-              className="border-white/20 text-white hover:bg-white/10"
-            >
-              Done
-            </Button>
-          </div>
-        </Card>
+        <TimerSettings
+          lockTimeoutMinutes={lockTimeoutMinutes}
+          onTimeoutChange={setLockTimeoutMinutes}
+          onClose={() => setShowTimerSettings(false)}
+        />
       )}
 
-      {expiredEntries.length > 0 && (
-        <Card className="glass-card p-4 bg-red-900/20 backdrop-blur-xl border-red-500/30">
-          <div className="flex items-center gap-2 text-red-400">
-            <AlertTriangle className="w-5 h-5" />
-            <span className="font-medium">
-              {expiredEntries.length} password{expiredEntries.length !== 1 ? 's have' : ' has'} expired
-            </span>
-          </div>
-        </Card>
-      )}
+      <ExpiredPasswordsAlert expiredCount={expiredEntries.length} />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="md:col-span-1">
-          <Card className="glass-card p-4 bg-white/5 backdrop-blur-xl border-white/20">
-            <h3 className="text-lg font-semibold text-white mb-4">Groups</h3>
-            <div className="space-y-2">
-              <button
-                onClick={() => setSelectedGroup('all')}
-                className={`w-full text-left p-2 rounded transition-colors ${
-                  selectedGroup === 'all' ? 'bg-green-600/20 text-green-400' : 'text-gray-300 hover:bg-white/10'
-                }`}
-              >
-                <div className="flex justify-between">
-                  <span>All Passwords</span>
-                  <span className="text-sm">{entries.length}</span>
-                </div>
-              </button>
-              {groupStats.map((group) => (
-                <button
-                  key={group.id}
-                  onClick={() => setSelectedGroup(group.id)}
-                  className={`w-full text-left p-2 rounded transition-colors ${
-                    selectedGroup === group.id ? 'bg-blue-600/20 text-blue-400' : 'text-gray-300 hover:bg-white/10'
-                  }`}
-                >
-                  <div className="flex justify-between">
-                    <span className="truncate">{group.name}</span>
-                    <span className="text-sm">{group.count}</span>
-                  </div>
-                </button>
-              ))}
-              {ungroupedCount > 0 && (
-                <button
-                  onClick={() => setSelectedGroup('')}
-                  className={`w-full text-left p-2 rounded transition-colors ${
-                    selectedGroup === '' ? 'bg-gray-600/20 text-gray-400' : 'text-gray-300 hover:bg-white/10'
-                  }`}
-                >
-                  <div className="flex justify-between">
-                    <span>Ungrouped</span>
-                    <span className="text-sm">{ungroupedCount}</span>
-                  </div>
-                </button>
-              )}
-            </div>
-          </Card>
+          <GroupSidebar
+            groups={groups}
+            selectedGroup={selectedGroup}
+            onGroupSelect={setSelectedGroup}
+            totalEntries={entries.length}
+            groupStats={groupStats}
+            ungroupedCount={ungroupedCount}
+          />
         </div>
 
         <div className="md:col-span-3 space-y-4">
           {showForm && (
-            <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
-              <h3 className="text-lg font-semibold text-white mb-4">
-                {editingEntry ? 'Edit Password' : 'Add New Password'}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  placeholder="Title"
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  className="glass-input bg-white/5 border-white/20 text-white"
-                />
-                <Input
-                  placeholder="Username/Email"
-                  value={formData.username}
-                  onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                  className="glass-input bg-white/5 border-white/20 text-white"
-                />
-                <div className="relative">
-                  <Input
-                    placeholder="Password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                    className="glass-input bg-white/5 border-white/20 text-white pr-10"
-                  />
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      const newPassword = generateNewPassword('');
-                      setFormData(prev => ({ ...prev, password: newPassword }));
-                    }}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 h-6 w-6 text-green-400 hover:text-green-300"
-                    variant="ghost"
-                    size="sm"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                  </Button>
-                </div>
-                <Input
-                  placeholder="Website"
-                  value={formData.website}
-                  onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
-                  className="glass-input bg-white/5 border-white/20 text-white"
-                />
-                <Select value={formData.group_id} onValueChange={(value) => setFormData(prev => ({ ...prev, group_id: value }))}>
-                  <SelectTrigger className="glass-input bg-white/5 border-white/20 text-white">
-                    <SelectValue placeholder="Select group (optional)" />
-                  </SelectTrigger>
-                  <SelectContent className="glass-card bg-gray-800 backdrop-blur-xl border-white/20 z-50">
-                    {groups.map((group) => (
-                      <SelectItem key={group.id} value={group.id} className="text-white hover:bg-white/10">
-                        {group.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  placeholder="Expiration (days)"
-                  type="number"
-                  value={formData.expiration_days}
-                  onChange={(e) => setFormData(prev => ({ ...prev, expiration_days: e.target.value }))}
-                  className="glass-input bg-white/5 border-white/20 text-white"
-                  min="1"
-                />
-              </div>
-              <Textarea
-                placeholder="Notes"
-                value={formData.notes}
-                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                className="glass-input bg-white/5 border-white/20 text-white mt-4"
-              />
-              <div className="flex gap-2 mt-4">
-                <Button
-                  onClick={() => {
-                    setShowForm(false);
-                    setEditingEntry(null);
-                    setFormData({ title: '', username: '', password: '', website: '', notes: '', group_id: '', expiration_days: '' });
-                  }}
-                  variant="outline"
-                  className="border-white/20 text-white hover:bg-white/10"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={saveEntry}
-                  className="glass-button bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  {editingEntry ? 'Update' : 'Save'}
-                </Button>
-              </div>
-            </Card>
+            <PasswordForm
+              formData={formData}
+              groups={groups}
+              editingEntry={editingEntry}
+              onFormDataChange={(data) => setFormData(prev => ({ ...prev, ...data }))}
+              onGeneratePassword={generateNewPassword}
+              onSave={saveEntry}
+              onCancel={() => {
+                setShowForm(false);
+                setEditingEntry(null);
+                setFormData({ title: '', username: '', password: '', website: '', notes: '', group_id: '', expiration_days: '' });
+              }}
+            />
           )}
 
           <div className="grid gap-4">
-            {filteredEntries.map((entry) => {
-              const groupName = groups.find(g => g.id === entry.group_id)?.name;
-              const isExpired = entry.is_expired;
-              const isExpiringSoon = entry.expires_at && !isExpired && 
-                new Date(entry.expires_at).getTime() - new Date().getTime() < 7 * 24 * 60 * 60 * 1000;
-
-              return (
-                <Card key={entry.id} className={`glass-card p-4 bg-white/5 backdrop-blur-xl border-white/20 ${
-                  isExpired ? 'border-red-500/50 bg-red-900/10' : 
-                  isExpiringSoon ? 'border-yellow-500/50 bg-yellow-900/10' : ''
-                }`}>
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-semibold text-white">{entry.title}</h3>
-                        {groupName && (
-                          <span className="text-xs bg-blue-600/20 text-blue-400 px-2 py-1 rounded">
-                            {groupName}
-                          </span>
-                        )}
-                        {isExpired && (
-                          <span className="text-xs bg-red-600/20 text-red-400 px-2 py-1 rounded flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            Expired
-                          </span>
-                        )}
-                        {isExpiringSoon && (
-                          <span className="text-xs bg-yellow-600/20 text-yellow-400 px-2 py-1 rounded flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            Expires Soon
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-gray-400">{entry.username}</p>
-                      {entry.website && (
-                        <p className="text-green-400 text-sm">{entry.website}</p>
-                      )}
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-gray-300 text-sm">Password:</span>
-                        <span className="text-white font-mono">
-                          {visiblePasswords.has(entry.id) 
-                            ? (() => {
-                                try {
-                                  return decryptPassword(entry.password_encrypted, masterPassword!);
-                                } catch {
-                                  return '••••••••';
-                                }
-                              })()
-                            : '••••••••'
-                          }
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => togglePasswordVisibility(entry.id)}
-                          className="text-gray-400 hover:text-white p-1 h-6 w-6"
-                        >
-                          {visiblePasswords.has(entry.id) ? 
-                            <EyeOff className="w-3 h-3" /> : 
-                            <Eye className="w-3 h-3" />
-                          }
-                        </Button>
-                      </div>
-                      {entry.expires_at && (
-                        <p className="text-gray-400 text-sm mt-1">
-                          Expires: {new Date(entry.expires_at).toLocaleDateString()}
-                        </p>
-                      )}
-                      {entry.notes && (
-                        <p className="text-gray-400 text-sm mt-2">{entry.notes}</p>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      {(isExpired || isExpiringSoon) && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => regeneratePassword(entry)}
-                          className="text-orange-400 hover:text-orange-300 p-2"
-                          title="Regenerate password"
-                        >
-                          <RefreshCw className="w-4 h-4" />
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => copyPassword(entry)}
-                        className="text-green-400 hover:text-green-300 p-2"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => editEntry(entry)}
-                        className="text-blue-400 hover:text-blue-300 p-2"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => deleteEntry(entry.id)}
-                        className="text-red-400 hover:text-red-300 p-2"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
+            {filteredEntries.map((entry) => (
+              <PasswordEntryCard
+                key={entry.id}
+                entry={entry}
+                groups={groups}
+                visiblePasswords={visiblePasswords}
+                masterPassword={masterPassword}
+                onToggleVisibility={togglePasswordVisibility}
+                onCopyPassword={copyPassword}
+                onEditEntry={editEntry}
+                onDeleteEntry={deleteEntry}
+                onRegeneratePassword={regeneratePassword}
+              />
+            ))}
           </div>
 
           {filteredEntries.length === 0 && (
-            <Card className="glass-card p-8 text-center bg-white/5 backdrop-blur-xl border-white/20">
-              <h3 className="text-lg font-semibold text-white mb-2">No passwords found</h3>
-              <p className="text-gray-400 mb-4">
-                {selectedGroup === 'all' 
-                  ? 'Start building your secure password vault' 
-                  : 'No passwords in this group'
-                }
-              </p>
-              <Button
-                onClick={() => setShowForm(true)}
-                className="glass-button bg-green-600 hover:bg-green-700 text-white"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Your First Password
-              </Button>
-            </Card>
+            <EmptyState
+              selectedGroup={selectedGroup}
+              onShowForm={() => setShowForm(true)}
+            />
           )}
         </div>
       </div>
