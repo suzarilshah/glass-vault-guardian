@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,7 +37,7 @@ interface PasswordEntry {
 
 interface PasswordVaultProps {
   masterPassword?: string | null;
-  onMasterPasswordSet?: (password: string) => void;
+  onMasterPasswordSet?: (password: string | null) => void;
 }
 
 const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMasterPassword, onMasterPasswordSet }) => {
@@ -71,16 +70,14 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
 
   // Sync with prop changes
   useEffect(() => {
-    if (propMasterPassword && propMasterPassword !== masterPassword) {
-      setMasterPassword(propMasterPassword);
-    }
-  }, [propMasterPassword, masterPassword]);
+    setMasterPassword(propMasterPassword || null);
+  }, [propMasterPassword]);
 
   useEffect(() => {
     if (user && !masterPassword) {
       checkMasterPassword();
     }
-  }, [user]);
+  }, [user, masterPassword]);
 
   useEffect(() => {
     if (masterPassword) {
@@ -562,7 +559,6 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
               <TimerSettings
                 lockTimeoutMinutes={lockTimeoutMinutes}
                 onTimeoutChange={handleTimeoutChange}
-                onClose={() => {}}
               />
             </div>
             

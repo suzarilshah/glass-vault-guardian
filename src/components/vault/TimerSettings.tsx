@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 interface TimerSettingsProps {
   lockTimeoutMinutes: number;
   onTimeoutChange: (minutes: number) => void;
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 const TimerSettings: React.FC<TimerSettingsProps> = ({
@@ -36,14 +36,16 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({
             <SelectItem value="60" className="text-white hover:bg-white/10">1 hour</SelectItem>
           </SelectContent>
         </Select>
-        <Button
-          onClick={onClose}
-          size="sm"
-          variant="outline"
-          className="border-white/20 text-white hover:bg-white/10"
-        >
-          Done
-        </Button>
+        {onClose && (
+          <Button
+            onClick={onClose}
+            size="sm"
+            variant="outline"
+            className="border-white/20 text-white hover:bg-white/10"
+          >
+            Done
+          </Button>
+        )}
       </div>
     </Card>
   );
