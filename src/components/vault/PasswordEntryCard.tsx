@@ -100,17 +100,15 @@ const PasswordEntryCard: React.FC<PasswordEntryCardProps> = ({
           )}
         </div>
         <div className="flex gap-2">
-          {(isExpired || isExpiringSoon) && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => onRegeneratePassword(entry)}
-              className="text-orange-400 hover:text-orange-300 p-2"
-              title="Regenerate password"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-          )}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onRegeneratePassword(entry)}
+            className="text-blue-400 hover:text-blue-300 p-2"
+            title="Regenerate password"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </Button>
           <Button
             size="sm"
             variant="ghost"

@@ -1,12 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, Users } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -15,7 +14,6 @@ interface PasswordGroup {
   id: string;
   name: string;
   description: string;
-  created_at: string;
 }
 
 interface GroupManagerProps {
@@ -25,43 +23,53 @@ interface GroupManagerProps {
 
 const GroupManager: React.FC<GroupManagerProps> = ({ isOpen, onClose }) => {
   const [groups, setGroups] = useState<PasswordGroup[]>([]);
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newGroupData, setNewGroupData] = useState({ name: '', description: '' });
   const [editingGroup, setEditingGroup] = useState<PasswordGroup | null>(null);
-  const [formData, setFormData] = useState({ name: '', description: '' });
   const [isLoading, setIsLoading] = useState(false);
-  
   const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && user) {
       fetchGroups();
     }
-  }, [isOpen]);
+  }, [isOpen, user]);
 
   const fetchGroups = async () => {
     if (!user) return;
-    
-    const { data, error } = await supabase
-      .from('password_groups')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('name');
 
-    if (error) {
+    try {
+      const { data, error } = await supabase
+        .from('password_groups')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name');
+
+      if (error) {
+        console.error('Error fetching groups:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch groups",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (data) {
+        setGroups(data);
+      }
+    } catch (error) {
+      console.error('Error in fetchGroups:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch groups",
+        description: "An unexpected error occurred",
         variant: "destructive"
       });
-      return;
     }
-
-    setGroups(data || []);
   };
 
-  const handleSaveGroup = async () => {
-    if (!user || !formData.name.trim()) {
+  const handleCreateGroup = async () => {
+    if (!user || !newGroupData.name.trim()) {
       toast({
         title: "Error",
         description: "Group name is required",
@@ -75,38 +83,133 @@ const GroupManager: React.FC<GroupManagerProps> = ({ isOpen, onClose }) => {
     try {
       const groupData = {
         user_id: user.id,
-        name: formData.name.trim(),
-        description: formData.description.trim()
+        name: newGroupData.name.trim(),
+        description: newGroupData.description.trim()
       };
 
-      let error;
-      if (editingGroup) {
-        ({ error } = await supabase
-          .from('password_groups')
-          .update(groupData)
-          .eq('id', editingGroup.id));
-      } else {
-        ({ error } = await supabase
-          .from('password_groups')
-          .insert(groupData));
-      }
+      const { error } = await supabase
+        .from('password_groups')
+        .insert(groupData);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating group:', error);
+        toast({
+          title: "Error",
+          description: "Failed to create group",
+          variant: "destructive"
+        });
+        return;
+      }
 
       toast({
         title: "Success",
-        description: editingGroup ? "Group updated" : "Group created"
+        description: "Group created successfully"
       });
 
-      setFormData({ name: '', description: '' });
-      setEditingGroup(null);
-      setShowCreateForm(false);
-      fetchGroups();
+      setNewGroupData({ name: '', description: '' });
+      await fetchGroups();
     } catch (error) {
-      console.error('Error saving group:', error);
+      console.error('Error creating group:', error);
       toast({
         title: "Error",
-        description: "Failed to save group",
+        description: "Failed to create group",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateGroup = async () => {
+    if (!user || !editingGroup || !editingGroup.id) {
+      toast({
+        title: "Error",
+        description: "Invalid group data",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase
+        .from('password_groups')
+        .update({
+          name: newGroupData.name.trim(),
+          description: newGroupData.description.trim()
+        })
+        .eq('id', editingGroup.id);
+
+      if (error) {
+        console.error('Error updating group:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update group",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Group updated successfully"
+      });
+
+      setEditingGroup(null);
+      setNewGroupData({ name: '', description: '' });
+      await fetchGroups();
+    } catch (error) {
+      console.error('Error updating group:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update group",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteGroup = async (groupId: string) => {
+    if (!user || !groupId) {
+      toast({
+        title: "Error",
+        description: "Invalid group ID",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase
+        .from('password_groups')
+        .delete()
+        .eq('id', groupId);
+
+      if (error) {
+        console.error('Error deleting group:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete group",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Group deleted successfully"
+      });
+
+      await fetchGroups();
+    } catch (error) {
+      console.error('Error deleting group:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete group",
         variant: "destructive"
       });
     } finally {
@@ -116,146 +219,113 @@ const GroupManager: React.FC<GroupManagerProps> = ({ isOpen, onClose }) => {
 
   const handleEditGroup = (group: PasswordGroup) => {
     setEditingGroup(group);
-    setFormData({ name: group.name, description: group.description });
-    setShowCreateForm(true);
+    setNewGroupData({ name: group.name, description: group.description });
   };
 
-  const handleDeleteGroup = async (groupId: string) => {
-    const { error } = await supabase
-      .from('password_groups')
-      .delete()
-      .eq('id', groupId);
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete group",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    toast({
-      title: "Success",
-      description: "Group deleted"
-    });
-    fetchGroups();
-  };
-
-  const resetForm = () => {
-    setFormData({ name: '', description: '' });
+  const handleClose = () => {
+    setNewGroupData({ name: '', description: '' });
     setEditingGroup(null);
-    setShowCreateForm(false);
+    setIsLoading(false);
+    onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="glass-card bg-white/5 backdrop-blur-xl border-white/20 text-white max-w-2xl">
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="glass-card bg-white/5 backdrop-blur-xl border-white/20 text-white max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-white flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            Manage Password Groups
-          </DialogTitle>
+          <DialogTitle className="text-white">Manage Groups</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg text-white">Your Groups</h3>
+          <div>
+            <Label htmlFor="name" className="text-gray-300">Group Name</Label>
+            <Input
+              id="name"
+              value={newGroupData.name}
+              onChange={(e) => setNewGroupData(prev => ({ ...prev, name: e.target.value }))}
+              className="glass-input bg-white/5 border-white/20 text-white"
+              placeholder="Enter group name"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="description" className="text-gray-300">Description (optional)</Label>
+            <Textarea
+              id="description"
+              value={newGroupData.description}
+              onChange={(e) => setNewGroupData(prev => ({ ...prev, description: e.target.value }))}
+              className="glass-input bg-white/5 border-white/20 text-white"
+              placeholder="Enter description"
+              rows={3}
+            />
+          </div>
+
+          <div className="flex gap-2">
             <Button
-              onClick={() => setShowCreateForm(true)}
-              className="glass-button bg-green-600 hover:bg-green-700 text-white"
+              onClick={editingGroup ? handleUpdateGroup : handleCreateGroup}
+              disabled={isLoading}
+              className="flex-1 glass-button bg-green-600 hover:bg-green-700 text-white"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              New Group
+              {isLoading ? 'Saving...' : editingGroup ? 'Update Group' : 'Create Group'}
+            </Button>
+            {editingGroup && (
+              <Button
+                onClick={() => {
+                  setEditingGroup(null);
+                  setNewGroupData({ name: '', description: '' });
+                }}
+                variant="outline"
+                className="flex-1 border-white/20 text-white hover:bg-white/10"
+              >
+                Cancel Edit
+              </Button>
+            )}
+          </div>
+
+          {groups.length > 0 ? (
+            <div className="space-y-2">
+              <Label className="text-gray-300">Existing Groups</Label>
+              <ScrollArea className="h-[200px] w-full rounded-md border bg-white/5 border-white/20">
+                <div className="p-3 space-y-2">
+                  {groups.map((group) => (
+                    <div key={group.id} className="flex items-center justify-between p-2 rounded bg-white/5 hover:bg-white/10">
+                      <div className="text-white">{group.name}</div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleEditGroup(group)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-blue-400 hover:text-blue-300"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteGroup(group.id)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          ) : (
+            <p className="text-gray-400">No groups created yet.</p>
+          )}
+
+          <div className="flex justify-end pt-4">
+            <Button
+              onClick={handleClose}
+              variant="outline"
+              className="border-white/20 text-white hover:bg-white/10"
+            >
+              Close
             </Button>
           </div>
-
-          {showCreateForm && (
-            <Card className="glass-card p-4 bg-white/5 backdrop-blur-xl border-white/20">
-              <h4 className="text-white mb-3">
-                {editingGroup ? 'Edit Group' : 'Create New Group'}
-              </h4>
-              <div className="space-y-3">
-                <div>
-                  <Label htmlFor="groupName" className="text-gray-300">Group Name *</Label>
-                  <Input
-                    id="groupName"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    className="glass-input bg-white/5 border-white/20 text-white"
-                    placeholder="Enter group name"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="groupDescription" className="text-gray-300">Description</Label>
-                  <Textarea
-                    id="groupDescription"
-                    value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    className="glass-input bg-white/5 border-white/20 text-white"
-                    placeholder="Enter group description"
-                    rows={2}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={resetForm}
-                    variant="outline"
-                    className="border-white/20 text-white hover:bg-white/10"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleSaveGroup}
-                    disabled={isLoading}
-                    className="glass-button bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    {isLoading ? 'Saving...' : (editingGroup ? 'Update' : 'Create')}
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          )}
-
-          <div className="grid gap-3 max-h-60 overflow-y-auto">
-            {groups.map((group) => (
-              <Card key={group.id} className="glass-card p-3 bg-white/5 backdrop-blur-xl border-white/20">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h4 className="text-white font-medium">{group.name}</h4>
-                    {group.description && (
-                      <p className="text-gray-400 text-sm mt-1">{group.description}</p>
-                    )}
-                  </div>
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleEditGroup(group)}
-                      className="text-blue-400 hover:text-blue-300 p-1"
-                    >
-                      <Edit className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleDeleteGroup(group.id)}
-                      className="text-red-400 hover:text-red-300 p-1"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-
-          {groups.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-gray-400">No groups created yet</p>
-              <p className="text-gray-500 text-sm">Create a group to organize your passwords</p>
-            </div>
-          )}
         </div>
       </DialogContent>
     </Dialog>

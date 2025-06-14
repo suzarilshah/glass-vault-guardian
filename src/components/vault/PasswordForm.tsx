@@ -44,20 +44,22 @@ const PasswordForm: React.FC<PasswordFormProps> = ({
           onChange={(e) => onFormDataChange({ username: e.target.value })}
           className="glass-input bg-white/5 border-white/20 text-white"
         />
-        <div className="relative">
+        <div className="relative flex">
           <Input
             placeholder="Password"
-            type="password"
+            type="text"
             value={formData.password}
             onChange={(e) => onFormDataChange({ password: e.target.value })}
             className="glass-input bg-white/5 border-white/20 text-white pr-10"
+            autoComplete="off"
           />
           <Button
             type="button"
             onClick={onGeneratePassword}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 h-6 w-6 text-green-400 hover:text-green-300"
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 h-6 w-6 text-blue-400 hover:text-blue-300 bg-blue-100 border border-blue-300"
             variant="ghost"
             size="sm"
+            tabIndex={-1}
           >
             <RefreshCw className="w-3 h-3" />
           </Button>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Copy, RefreshCw, Shield, CheckCircle2, AlertTriangle, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -190,7 +189,7 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ masterPassword })
                     onClick={generatePassword}
                     variant="outline"
                     size="sm"
-                    className="glass-button border-white/20 text-white hover:bg-white/10"
+                    className="bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200 hover:text-blue-900 border font-semibold"
                   >
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Regenerate
@@ -208,7 +207,7 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ masterPassword })
                       onClick={handleSavePassword}
                       variant="ghost"
                       size="sm"
-                      className="text-blue-400 hover:text-blue-300 hover:bg-white/10"
+                      className="bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200 hover:text-blue-900 border font-semibold"
                     >
                       <Save className="w-4 h-4" />
                     </Button>
@@ -217,7 +216,7 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ masterPassword })
                     onClick={copyToClipboard}
                     variant="ghost"
                     size="sm"
-                    className="text-green-400 hover:text-green-300 hover:bg-white/10"
+                    className="bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200 hover:text-blue-900 border font-semibold"
                     disabled={!password}
                   >
                     <Copy className="w-4 h-4" />

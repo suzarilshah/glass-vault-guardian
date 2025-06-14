@@ -54,6 +54,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
     groupStats,
     ungroupedCount,
     handleShowForm,
+    manualLockVault,
   } = usePasswordVault({ masterPassword: propMasterPassword, onMasterPasswordSet });
 
   if (!masterPassword) {
@@ -77,6 +78,10 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
         onShowGroupManager={() => setShowGroupManager(true)}
         onExportPasswords={exportPasswords}
         onShowForm={handleShowForm}
+        onLockVault={() => {
+          // Manual lock vault
+          if (onMasterPasswordSet) onMasterPasswordSet(null);
+        }}
       />
 
       {showTimerSettings && (

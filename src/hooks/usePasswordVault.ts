@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,12 +37,11 @@ export const usePasswordVault = ({ masterPassword: propMasterPassword, onMasterP
     if (countdownInterval) clearInterval(countdownInterval);
 
     const timeoutMs = lockTimeoutMinutes * 60 * 1000;
-    const startTime = Date.now();
+    const deadline = Date.now() + timeoutMs;
     setRemainingTime(timeoutMs / 1000);
 
     const newCountdownInterval = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const remaining = Math.max(0, Math.ceil((timeoutMs - elapsed) / 1000));
+      const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
       setRemainingTime(remaining);
       if (remaining === 0) clearInterval(newCountdownInterval);
     }, 1000);
@@ -59,7 +57,19 @@ export const usePasswordVault = ({ masterPassword: propMasterPassword, onMasterP
       toast({ title: "Vault Locked", description: "Your vault has been automatically locked for security", variant: "destructive" });
     }, timeoutMs);
     setLockTimer(newTimer);
-  }, [lockTimeoutMinutes, onMasterPasswordSet, toast, lockTimer, countdownInterval]);
+  }, [lockTimeoutMinutes, onMasterPasswordSet, toast]);
+
+  // Manual lock
+  const manualLockVault = useCallback(() => {
+    if (lockTimer) clearTimeout(lockTimer);
+    if (countdownInterval) clearInterval(countdownInterval);
+    setMasterPassword(null);
+    setVisiblePasswords(new Set());
+    setShowForm(false);
+    setEditingEntry(null);
+    onMasterPasswordSet?.(null);
+    toast({ title: "Vault Locked", description: "Your vault has been manually locked.", variant: "destructive" });
+  }, [lockTimer, countdownInterval, onMasterPasswordSet, toast]);
 
   const fetchEntries = useCallback(async () => {
     if (!user) return;
@@ -145,6 +155,13 @@ export const usePasswordVault = ({ masterPassword: propMasterPassword, onMasterP
   const regeneratePassword = async (entry: PasswordEntry) => {
     if (!masterPassword) return;
     try {
+      // Save history before updating!
+      await supabase.from('password_histories').insert({
+        entry_id: entry.id,
+        user_id: user?.id,
+        password_encrypted: entry.password_encrypted,
+        changed_at: new Date().toISOString(),
+      });
       const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
       let newPassword = '';
       for (let i = 0; i < 16; i++) newPassword += charset.charAt(Math.floor(Math.random() * charset.length));
@@ -283,5 +300,6 @@ export const usePasswordVault = ({ masterPassword: propMasterPassword, onMasterP
     setFormData, handleMasterPasswordSubmit, handleTimeoutChange, fetchGroups, generateNewPassword, regeneratePassword,
     saveEntry, editEntry, deleteEntry, copyPassword, togglePasswordVisibility, exportPasswords, filteredEntries,
     expiredEntries, groupStats, ungroupedCount, handleShowForm,
+    manualLockVault,
   };
 };

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Download, Users, Settings, Lock } from 'lucide-react';
@@ -9,6 +8,7 @@ interface VaultHeaderProps {
   onShowGroupManager: () => void;
   onExportPasswords: () => void;
   onShowForm: () => void;
+  onLockVault: () => void;
 }
 
 const VaultHeader: React.FC<VaultHeaderProps> = ({
@@ -16,7 +16,8 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({
   onShowTimerSettings,
   onShowGroupManager,
   onExportPasswords,
-  onShowForm
+  onShowForm,
+  onLockVault
 }) => {
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -39,7 +40,7 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({
         <Button
           onClick={onShowTimerSettings}
           variant="outline"
-          className="border-white/20 text-gray-300 hover:bg-gray-700 hover:text-white"
+          className="bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200 hover:text-blue-900 border font-semibold"
         >
           <Settings className="w-4 h-4 mr-2" />
           Timer
@@ -47,7 +48,7 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({
         <Button
           onClick={onShowGroupManager}
           variant="outline"
-          className="border-white/20 text-gray-300 hover:bg-gray-700 hover:text-white"
+          className="bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200 hover:text-blue-900 border font-semibold"
         >
           <Users className="w-4 h-4 mr-2" />
           Manage Groups
@@ -55,7 +56,7 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({
         <Button
           onClick={onExportPasswords}
           variant="outline"
-          className="border-white/20 text-gray-300 hover:bg-gray-700 hover:text-white"
+          className="bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200 hover:text-blue-900 border font-semibold"
         >
           <Download className="w-4 h-4 mr-2" />
           Export
@@ -66,6 +67,13 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Password
+        </Button>
+        <Button
+          onClick={onLockVault}
+          className="bg-red-600 hover:bg-red-700 text-white font-semibold border border-red-300"
+        >
+          <Lock className="w-4 h-4 mr-2" />
+          Manual Lock
         </Button>
       </div>
     </div>
