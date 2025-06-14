@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Save, RefreshCw } from 'lucide-react';
 import { PasswordGroup, PasswordEntry, FormData } from '@/types/vault';
+import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 
 interface PasswordFormProps {
   formData: FormData;
@@ -97,6 +99,10 @@ const PasswordForm: React.FC<PasswordFormProps> = ({
           min="1"
         />
       </div>
+      
+      {/* Password strength indicator */}
+      <PasswordStrengthIndicator password={formData.password} />
+      
       <Textarea
         placeholder="Notes"
         value={formData.notes}

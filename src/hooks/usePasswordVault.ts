@@ -205,6 +205,15 @@ export const usePasswordVault = ({ masterPassword: propMasterPassword, onMasterP
       };
       let error;
       if (editingEntry) {
+        // Save to history before updating
+        await supabase
+          .from('password_histories')
+          .insert({
+            entry_id: editingEntry.id,
+            user_id: user?.id,
+            password_encrypted: editingEntry.password_encrypted,
+            changed_at: new Date().toISOString(),
+          });
         ({ error } = await supabase.from('password_entries').update(entryData).eq('id', editingEntry.id));
       } else {
         ({ error } = await supabase.from('password_entries').insert(entryData));

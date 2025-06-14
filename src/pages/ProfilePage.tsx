@@ -1,378 +1,255 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card } from '@/components/ui/card';
+import { ArrowLeft, User, Mail, Save, AlertTriangle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { User, Mail, Lock, Shield, Save } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import ConfirmationDialog from '@/components/vault/ConfirmationDialog';
 
-const ProfilePage: React.FC = () => {
-  const { user, session } = useAuth();
+const ProfilePage = () => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
-
-  const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({
-    email: user?.email || '',
     first_name: '',
     last_name: '',
-    full_name: '',
-    avatar_url: '',
+    email: '',
   });
-  const [editEmail, setEditEmail] = useState('');
-  const [editPassword, setEditPassword] = useState('');
-  const [editMasterPassword, setEditMasterPassword] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
 
   useEffect(() => {
+    if (user) {
+      fetchProfile();
+    }
+  }, [user]);
+
+  const fetchProfile = async () => {
     if (!user) return;
-    setLoading(true);
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
-      .then(({ data, error }) => {
-        if (error) {
-          toast({
-            title: "Error loading profile",
-            description: error.message,
-            variant: "destructive"
-          });
-        } else if (data) {
-          setProfile({
-            email: user.email || '',
-            first_name: data.first_name || '',
-            last_name: data.last_name || '',
-            full_name: data.full_name || '',
-            avatar_url: data.avatar_url || '',
-          });
-          setAvatarUrl(data.avatar_url || '');
-        }
-        setLoading(false);
-      });
-  }, [user, toast]);
 
-  const handleProfileSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, email')
+        .eq('id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching profile:', error);
+        return;
+      }
+
+      if (data) {
+        setProfile({
+          first_name: data.first_name || '',
+          last_name: data.last_name || '',
+          email: data.email || user.email || '',
+        });
+      } else {
+        setProfile({
+          first_name: '',
+          last_name: '',
+          email: user.email || '',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  const handleSave = async () => {
     if (!user) return;
-    setSaving(true);
-    const updates = {
-      first_name: profile.first_name,
-      last_name: profile.last_name,
-      full_name: profile.full_name,
-      avatar_url: avatarUrl,
-      updated_at: new Date().toISOString(),
-    };
-    const { error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', user.id);
 
-    setSaving(false);
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          email: profile.email,
+          updated_at: new Date().toISOString(),
+        });
 
-    if (error) {
+      if (error) {
+        console.error('Error updating profile:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update profile",
+          variant: "destructive"
+        });
+        return;
+      }
+
       toast({
-        title: "Update failed",
-        description: error.message,
+        title: "Success",
+        description: "Profile updated successfully"
+      });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile",
         variant: "destructive"
       });
-    } else {
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been updated.",
-      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleEmailUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editEmail || !user) return;
-    setSaving(true);
-    const { error } = await supabase.auth.updateUser({
-      email: editEmail,
-    });
-    setSaving(false);
+  const handleDeactivateAccount = async () => {
+    if (!user) return;
 
-    if (error) {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          deactivated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('Error deactivating account:', error);
+        toast({
+          title: "Error",
+          description: "Failed to deactivate account",
+          variant: "destructive"
+        });
+        return;
+      }
+
       toast({
-        title: "Failed to update email",
-        description: error.message,
-        variant: "destructive",
+        title: "Account Deactivated",
+        description: "Your account has been deactivated",
+        variant: "destructive"
       });
-    } else {
+
+      // Sign out user after deactivation
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Error deactivating account:', error);
       toast({
-        title: "Email updated",
-        description: "Please check your inbox for a confirmation email.",
+        title: "Error",
+        description: "Failed to deactivate account",
+        variant: "destructive"
       });
-      setEditEmail('');
     }
   };
-
-  const handlePasswordUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editPassword || !user) return;
-    setSaving(true);
-    const { error } = await supabase.auth.updateUser({
-      password: editPassword,
-    });
-    setSaving(false);
-    if (error) {
-      toast({
-        title: "Password update failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Password updated",
-        description: "Your password has been updated.",
-      });
-      setEditPassword('');
-    }
-  };
-
-  const handleMasterPasswordUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !editMasterPassword) return;
-    setSaving(true);
-
-    const hash = editMasterPassword;
-
-    const { error } = await supabase
-      .from('user_master_passwords')
-      .upsert(
-        [
-          {
-            user_id: user.id,
-            master_password_hash: hash,
-            updated_at: new Date().toISOString(),
-          },
-        ],
-        { onConflict: 'user_id' }
-      );
-    setSaving(false);
-    if (error) {
-      toast({
-        title: "Master password update failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Master password updated",
-        description: "Your master password has been updated.",
-      });
-      setEditMasterPassword('');
-    }
-  };
-
-  if (!user) {
-    return null;
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
-        <div className="text-white">Loading profile...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <Link 
-            to="/" 
-            className="inline-flex items-center text-green-400 hover:text-green-300 mb-4 transition-colors"
+      <div className="max-w-2xl mx-auto">
+        <div className="flex items-center gap-4 mb-8">
+          <Button
+            onClick={() => navigate('/')}
+            variant="outline"
+            size="sm"
+            className="border-white/20 text-white hover:bg-white/10"
           >
-            ← Back to Dashboard
-          </Link>
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-white to-green-400 bg-clip-text text-transparent">
-              User Profile
-            </h1>
-            <p className="text-gray-400">Manage your account settings and security</p>
-          </div>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Vault
+          </Button>
+          <h1 className="text-3xl font-bold text-white">Profile Settings</h1>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Profile Information */}
-          <Card className="glass-card bg-white/5 backdrop-blur-xl border-white/20">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <User className="w-5 h-5 text-green-400" />
-                Profile Information
-              </CardTitle>
-              <CardDescription className="text-gray-400">
-                Update your personal information
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleProfileSave} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm text-gray-300 mb-2">First Name</label>
-                    <Input
-                      value={profile.first_name}
-                      onChange={e => setProfile(p => ({ ...p, first_name: e.target.value }))}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
-                      placeholder="First Name"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-300 mb-2">Last Name</label>
-                    <Input
-                      value={profile.last_name}
-                      onChange={e => setProfile(p => ({ ...p, last_name: e.target.value }))}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
-                      placeholder="Last Name"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-300 mb-2">Full Name</label>
-                  <Input
-                    value={profile.full_name}
-                    onChange={e => setProfile(p => ({ ...p, full_name: e.target.value }))}
-                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
-                    placeholder="Full Name"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-green-600 hover:bg-green-700 text-white border border-green-400 font-semibold transition-all duration-200"
-                  disabled={saving}
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  {saving ? 'Saving...' : 'Save Profile'}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+        <div className="space-y-6">
+          <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
+            <div className="flex items-center gap-2 mb-4">
+              <User className="w-5 h-5 text-white" />
+              <h2 className="text-xl font-semibold text-white">Personal Information</h2>
+            </div>
 
-          {/* Email Settings */}
-          <Card className="glass-card bg-white/5 backdrop-blur-xl border-white/20">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Mail className="w-5 h-5 text-green-400" />
-                Email Settings
-              </CardTitle>
-              <CardDescription className="text-gray-400">
-                Update your email address
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleEmailUpdate} className="space-y-4">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-gray-300 mb-2">Current Email</label>
+                  <Label htmlFor="firstName" className="text-gray-300">First Name</Label>
                   <Input
-                    value={profile.email}
-                    disabled
-                    className="bg-white/5 border-white/10 text-gray-400"
+                    id="firstName"
+                    value={profile.first_name}
+                    onChange={(e) => setProfile(prev => ({ ...prev, first_name: e.target.value }))}
+                    className="glass-input bg-white/5 border-white/20 text-white"
+                    placeholder="Enter your first name"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-300 mb-2">New Email</label>
+                  <Label htmlFor="lastName" className="text-gray-300">Last Name</Label>
                   <Input
-                    value={editEmail}
-                    onChange={e => setEditEmail(e.target.value)}
+                    id="lastName"
+                    value={profile.last_name}
+                    onChange={(e) => setProfile(prev => ({ ...prev, last_name: e.target.value }))}
+                    className="glass-input bg-white/5 border-white/20 text-white"
+                    placeholder="Enter your last name"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="email" className="text-gray-300">Email</Label>
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-gray-400" />
+                  <Input
+                    id="email"
                     type="email"
-                    placeholder="Enter new email"
-                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                    value={profile.email}
+                    onChange={(e) => setProfile(prev => ({ ...prev, email: e.target.value }))}
+                    className="glass-input bg-white/5 border-white/20 text-white"
+                    placeholder="Enter your email"
                   />
                 </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white border border-blue-400 font-semibold transition-all duration-200"
-                  disabled={saving || !editEmail}
-                >
-                  <Mail className="w-4 h-4 mr-2" />
-                  {saving ? 'Updating...' : 'Update Email'}
-                </Button>
-              </form>
-            </CardContent>
+              </div>
+
+              <Button
+                onClick={handleSave}
+                disabled={isLoading}
+                className="glass-button bg-green-600 hover:bg-green-700 text-white"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {isLoading ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
           </Card>
 
-          {/* Password Settings */}
-          <Card className="glass-card bg-white/5 backdrop-blur-xl border-white/20">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Lock className="w-5 h-5 text-green-400" />
-                Password Settings
-              </CardTitle>
-              <CardDescription className="text-gray-400">
-                Change your account password
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handlePasswordUpdate} className="space-y-4">
-                <div>
-                  <label className="block text-sm text-gray-300 mb-2">New Password</label>
-                  <Input
-                    value={editPassword}
-                    onChange={e => setEditPassword(e.target.value)}
-                    type="password"
-                    placeholder="Enter new password"
-                    minLength={8}
-                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Must be at least 8 characters</p>
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-orange-600 hover:bg-orange-700 text-white border border-orange-400 font-semibold transition-all duration-200"
-                  disabled={saving || !editPassword}
-                >
-                  <Lock className="w-4 h-4 mr-2" />
-                  {saving ? 'Updating...' : 'Update Password'}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+          {/* Danger Zone */}
+          <Card className="glass-card p-6 bg-red-900/10 backdrop-blur-xl border-red-500/30">
+            <div className="flex items-center gap-2 mb-4">
+              <AlertTriangle className="w-5 h-5 text-red-400" />
+              <h2 className="text-xl font-semibold text-red-400">Danger Zone</h2>
+            </div>
 
-          {/* Master Password Settings */}
-          <Card className="glass-card bg-white/5 backdrop-blur-xl border-white/20">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Shield className="w-5 h-5 text-green-400" />
-                Master Password
-              </CardTitle>
-              <CardDescription className="text-gray-400">
-                Update your vault master password
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleMasterPasswordUpdate} className="space-y-4">
-                <div>
-                  <label className="block text-sm text-gray-300 mb-2">New Master Password</label>
-                  <Input
-                    value={editMasterPassword}
-                    onChange={e => setEditMasterPassword(e.target.value)}
-                    type="password"
-                    placeholder="Enter new master password"
-                    minLength={8}
-                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">This secures your password vault</p>
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-red-600 hover:bg-red-700 text-white border border-red-400 font-semibold transition-all duration-200"
-                  disabled={saving || !editMasterPassword}
-                >
-                  <Shield className="w-4 h-4 mr-2" />
-                  {saving ? 'Updating...' : 'Update Master Password'}
-                </Button>
-              </form>
-            </CardContent>
+            <div className="space-y-4">
+              <p className="text-gray-300 text-sm">
+                Once you deactivate your account, all your data will be marked as inactive and you will be signed out. 
+                This action is reversible by contacting support.
+              </p>
+
+              <Button
+                onClick={() => setShowDeactivateConfirm(true)}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                <AlertTriangle className="w-4 h-4 mr-2" />
+                Deactivate Account
+              </Button>
+            </div>
           </Card>
         </div>
       </div>
+
+      <ConfirmationDialog
+        isOpen={showDeactivateConfirm}
+        onClose={() => setShowDeactivateConfirm(false)}
+        onConfirm={handleDeactivateAccount}
+        title="Deactivate Account"
+        message="Are you sure you want to deactivate your account? You will be signed out and your data will be marked as inactive. Contact support to reactivate your account."
+        confirmText="Deactivate Account"
+        isDangerous={true}
+      />
     </div>
   );
 };
