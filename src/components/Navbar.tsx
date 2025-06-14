@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Shield, LogOut, User, Key } from 'lucide-react';
@@ -10,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Link } from "react-router-dom";
 
 interface NavbarProps {
   onShowVault: () => void;
@@ -61,9 +61,11 @@ const Navbar: React.FC<NavbarProps> = ({ onShowVault, currentView }) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="glass-card bg-white/10 backdrop-blur-xl border-white/20">
-              <DropdownMenuItem className="text-white">
-                <User className="w-4 h-4 mr-2" />
-                Profile
+              <DropdownMenuItem className="text-white" asChild>
+                <Link to="/profile" className="flex items-center">
+                  <User className="w-4 h-4 mr-2" />
+                  Profile
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-white/20" />
               <DropdownMenuItem 
