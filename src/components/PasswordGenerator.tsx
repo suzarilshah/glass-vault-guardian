@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Copy, RefreshCw, Shield, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { calculateCrackTime } from '@/utils/passwordUtils';
 import { checkPasswordBreach } from '@/utils/breachChecker';
@@ -91,14 +91,6 @@ const PasswordGenerator = () => {
     }
   };
 
-  useEffect(() => {
-    generatePassword();
-  }, [options]);
-
-  useEffect(() => {
-    setStrength(calculateStrength(password));
-  }, [password]);
-
   const getStrengthColor = (strength: number) => {
     if (strength <= 2) return 'bg-red-500';
     if (strength <= 3) return 'bg-yellow-500';
@@ -126,167 +118,188 @@ const PasswordGenerator = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-white to-green-400 bg-clip-text text-transparent">
-            Password Generator
+            Password Security Suite
           </h1>
-          <p className="text-gray-400">Generate secure passwords with advanced customization</p>
+          <p className="text-gray-400">Generate secure passwords and analyze their strength</p>
         </div>
 
-        {/* Main Password Card */}
-        <Card className="glass-card mb-6 p-6 border-0 bg-white/5 backdrop-blur-xl">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-                <Shield className="w-5 h-5 text-green-400" />
-                Generated Password
-              </h2>
-              <Button
-                onClick={generatePassword}
-                variant="outline"
-                size="sm"
-                className="glass-button border-white/20 text-white hover:bg-white/10"
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Regenerate
-              </Button>
-            </div>
-            
-            <div className="relative">
-              <div className="glass-input p-4 rounded-lg border border-white/20 bg-white/5 font-mono text-lg text-white break-all">
-                {password || 'Click regenerate to create a password'}
-              </div>
-              <Button
-                onClick={copyToClipboard}
-                variant="ghost"
-                size="sm"
-                className="absolute right-2 top-2 text-green-400 hover:text-green-300 hover:bg-white/10"
-                disabled={!password}
-              >
-                <Copy className="w-4 h-4" />
-              </Button>
-            </div>
+        {/* Tabs */}
+        <Tabs defaultValue="generator" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 glass-card bg-white/5 backdrop-blur-xl border-white/20">
+            <TabsTrigger 
+              value="generator" 
+              className="text-white data-[state=active]:bg-white/10 data-[state=active]:text-green-400"
+            >
+              Password Generator
+            </TabsTrigger>
+            <TabsTrigger 
+              value="analyzer" 
+              className="text-white data-[state=active]:bg-white/10 data-[state=active]:text-green-400"
+            >
+              Password Analyzer
+            </TabsTrigger>
+          </TabsList>
 
-            {/* Strength Indicator */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-300">Password Strength</span>
-                <span className={`text-sm font-medium ${
-                  strength <= 2 ? 'text-red-400' : 
-                  strength <= 3 ? 'text-yellow-400' : 
-                  strength <= 4 ? 'text-blue-400' : 'text-green-400'
-                }`}>
-                  {getStrengthText(strength)}
-                </span>
-              </div>
-              <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-                <div 
-                  className={`h-full transition-all duration-300 ${getStrengthColor(strength)}`}
-                  style={{ width: `${(strength / 5) * 100}%` }}
-                />
-              </div>
-            </div>
+          <TabsContent value="generator" className="space-y-6 mt-6">
+            {/* Main Password Card */}
+            <Card className="glass-card mb-6 p-6 border-0 bg-white/5 backdrop-blur-xl">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-green-400" />
+                    Generated Password
+                  </h2>
+                  <Button
+                    onClick={generatePassword}
+                    variant="outline"
+                    size="sm"
+                    className="glass-button border-white/20 text-white hover:bg-white/10"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Regenerate
+                  </Button>
+                </div>
+                
+                <div className="relative">
+                  <div className="glass-input p-4 rounded-lg border border-white/20 bg-white/5 font-mono text-lg text-white break-all">
+                    {password || 'Click regenerate to create a password'}
+                  </div>
+                  <Button
+                    onClick={copyToClipboard}
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-2 text-green-400 hover:text-green-300 hover:bg-white/10"
+                    disabled={!password}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
 
-            {/* Breach Status and Crack Time Display */}
-            {password && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Breach Status */}
-                {generatedPasswordBreach && (
-                  <div className="glass-option p-3 rounded-lg border border-white/10">
-                    <div className="flex items-center gap-2 mb-1">
-                      {generatedPasswordBreach.isBreached ? 
-                        <AlertTriangle className="w-4 h-4 text-red-400" /> : 
-                        <CheckCircle2 className="w-4 h-4 text-green-400" />
-                      }
-                      <span className="text-sm text-gray-300">Breach Status:</span>
-                    </div>
-                    <span className={`text-sm font-semibold ${
-                      generatedPasswordBreach.isBreached ? 'text-red-400' : 'text-green-400'
+                {/* Strength Indicator */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-300">Password Strength</span>
+                    <span className={`text-sm font-medium ${
+                      strength <= 2 ? 'text-red-400' : 
+                      strength <= 3 ? 'text-yellow-400' : 
+                      strength <= 4 ? 'text-blue-400' : 'text-green-400'
                     }`}>
-                      {generatedPasswordBreach.isBreached ? 'Compromised' : 'Safe'}
+                      {getStrengthText(strength)}
                     </span>
                   </div>
-                )}
+                  <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-300 ${getStrengthColor(strength)}`}
+                      style={{ width: `${(strength / 5) * 100}%` }}
+                    />
+                  </div>
+                </div>
 
-                {/* Crack Time */}
-                {generatedPasswordCrackTime && (
-                  <div className="glass-option p-3 rounded-lg border border-white/10">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-300">Time to crack:</span>
-                      <span className="text-sm font-semibold text-green-400">
-                        {generatedPasswordCrackTime.humanReadable}
-                      </span>
-                    </div>
+                {/* Breach Status and Crack Time Display */}
+                {password && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Breach Status */}
+                    {generatedPasswordBreach && (
+                      <div className="glass-option p-3 rounded-lg border border-white/10">
+                        <div className="flex items-center gap-2 mb-1">
+                          {generatedPasswordBreach.isBreached ? 
+                            <AlertTriangle className="w-4 h-4 text-red-400" /> : 
+                            <CheckCircle2 className="w-4 h-4 text-green-400" />
+                          }
+                          <span className="text-sm text-gray-300">Breach Status:</span>
+                        </div>
+                        <span className={`text-sm font-semibold ${
+                          generatedPasswordBreach.isBreached ? 'text-red-400' : 'text-green-400'
+                        }`}>
+                          {generatedPasswordBreach.isBreached ? 'Compromised' : 'Safe'}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Crack Time */}
+                    {generatedPasswordCrackTime && (
+                      <div className="glass-option p-3 rounded-lg border border-white/10">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-300">Time to crack:</span>
+                          <span className="text-sm font-semibold text-green-400">
+                            {generatedPasswordCrackTime.humanReadable}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
-          </div>
-        </Card>
+            </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Options Card */}
-          <Card className="glass-card p-6 border-0 bg-white/5 backdrop-blur-xl">
-            <h3 className="text-lg font-semibold text-white mb-4">Customization Options</h3>
-            
-            <div className="space-y-6">
-              {/* Length Slider */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-300">Password Length</label>
-                  <span className="text-sm text-green-400 font-mono">{options.length} characters</span>
-                </div>
-                <Slider
-                  value={[options.length]}
-                  onValueChange={(value) => setOptions(prev => ({ ...prev, length: value[0] }))}
-                  max={64}
-                  min={4}
-                  step={1}
-                  className="slider-custom"
-                />
-              </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Options Card */}
+              <Card className="glass-card p-6 border-0 bg-white/5 backdrop-blur-xl">
+                <h3 className="text-lg font-semibold text-white mb-4">Customization Options</h3>
+                
+                <div className="space-y-6">
+                  {/* Length Slider */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-300">Password Length</label>
+                      <span className="text-sm text-green-400 font-mono">{options.length} characters</span>
+                    </div>
+                    <Slider
+                      value={[options.length]}
+                      onValueChange={(value) => setOptions(prev => ({ ...prev, length: value[0] }))}
+                      max={64}
+                      min={4}
+                      step={1}
+                      className="slider-custom"
+                    />
+                  </div>
 
-              {/* Character Type Options */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
-                  <label className="text-sm text-gray-300">Uppercase (A-Z)</label>
-                  <Switch
-                    checked={options.includeUppercase}
-                    onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeUppercase: checked }))}
-                  />
+                  {/* Character Type Options */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
+                      <label className="text-sm text-gray-300">Uppercase (A-Z)</label>
+                      <Switch
+                        checked={options.includeUppercase}
+                        onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeUppercase: checked }))}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
+                      <label className="text-sm text-gray-300">Lowercase (a-z)</label>
+                      <Switch
+                        checked={options.includeLowercase}
+                        onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeLowercase: checked }))}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
+                      <label className="text-sm text-gray-300">Numbers (0-9)</label>
+                      <Switch
+                        checked={options.includeNumbers}
+                        onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeNumbers: checked }))}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
+                      <label className="text-sm text-gray-300">Special Characters (!@#$)</label>
+                      <Switch
+                        checked={options.includeSpecialChars}
+                        onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeSpecialChars: checked }))}
+                      />
+                    </div>
+                  </div>
                 </div>
-                
-                <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
-                  <label className="text-sm text-gray-300">Lowercase (a-z)</label>
-                  <Switch
-                    checked={options.includeLowercase}
-                    onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeLowercase: checked }))}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
-                  <label className="text-sm text-gray-300">Numbers (0-9)</label>
-                  <Switch
-                    checked={options.includeNumbers}
-                    onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeNumbers: checked }))}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
-                  <label className="text-sm text-gray-300">Special Characters (!@#$)</label>
-                  <Switch
-                    checked={options.includeSpecialChars}
-                    onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeSpecialChars: checked }))}
-                  />
-                </div>
-              </div>
+              </Card>
+
+              {/* Keyword Obfuscator */}
+              <KeywordObfuscator onPasswordGenerated={handleKeywordPasswordGenerated} />
             </div>
-          </Card>
+          </TabsContent>
 
-          {/* Keyword Obfuscator */}
-          <KeywordObfuscator onPasswordGenerated={handleKeywordPasswordGenerated} />
-        </div>
-
-        {/* Password Analyzer */}
-        <PasswordAnalyzer />
+          <TabsContent value="analyzer" className="space-y-6 mt-6">
+            <PasswordAnalyzer />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
