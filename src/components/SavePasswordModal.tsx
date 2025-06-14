@@ -304,11 +304,17 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
               </div>
             )}
 
-            <Select value={formData.group_id} onValueChange={(value) => setFormData(prev => ({ ...prev, group_id: value }))}>
+            <Select 
+              value={formData.group_id || '--NONE--'} 
+              onValueChange={(value) => setFormData(prev => ({ ...prev, group_id: value === '--NONE--' ? '' : value }))}
+            >
               <SelectTrigger className="glass-input bg-white/5 border-white/20 text-white">
                 <SelectValue placeholder="Select group (optional)" />
               </SelectTrigger>
               <SelectContent className="glass-card bg-gray-800 backdrop-blur-xl border-white/20 z-50">
+                <SelectItem value="--NONE--" className="text-white hover:bg-white/10">
+                  (No Group)
+                </SelectItem>
                 {groups.map((group) => (
                   <SelectItem key={group.id} value={group.id} className="text-white hover:bg-white/10">
                     {group.name}

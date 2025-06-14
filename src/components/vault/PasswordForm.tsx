@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,12 +68,15 @@ const PasswordForm: React.FC<PasswordFormProps> = ({
           onChange={(e) => onFormDataChange({ website: e.target.value })}
           className="glass-input bg-white/5 border-white/20 text-white"
         />
-        <Select value={formData.group_id} onValueChange={(value) => onFormDataChange({ group_id: value })}>
+        <Select
+          value={formData.group_id || '--NONE--'}
+          onValueChange={(value) => onFormDataChange({ group_id: value === '--NONE--' ? '' : value })}
+        >
           <SelectTrigger className="glass-input bg-white/5 border-white/20 text-white">
             <SelectValue placeholder="Select group (optional)" />
           </SelectTrigger>
           <SelectContent className="glass-card bg-gray-800 backdrop-blur-xl border-white/20 z-50">
-            <SelectItem value="" className="text-white hover:bg-white/10">
+            <SelectItem value="--NONE--" className="text-white hover:bg-white/10">
               Ungrouped
             </SelectItem>
             {groups.map((group) => (
