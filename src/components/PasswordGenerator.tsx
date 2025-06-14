@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Save, Copy, RefreshCw, Shield, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,11 +8,13 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { calculateCrackTime } from '@/utils/passwordUtils';
+import { calculatePasswordScore } from '@/utils/passwordScoring';
 import { checkPasswordBreach } from '@/utils/breachChecker';
 import { useAuth } from '@/contexts/AuthContext';
 import KeywordObfuscator from './KeywordObfuscator';
 import PasswordAnalyzer from './PasswordAnalyzer';
 import SavePasswordModal from './SavePasswordModal';
+import AdvancedPasswordStrengthIndicator from './vault/AdvancedPasswordStrengthIndicator';
 
 interface PasswordOptions {
   length: number;
@@ -34,8 +37,8 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
     includeNumbers: true,
     includeSpecialChars: true,
   });
-  const [strength, setStrength] = useState(0);
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showAdvancedScoring, setShowAdvancedScoring] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -66,24 +69,6 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
     }
     
     setPassword(result);
-  };
-
-  const calculateStrength = (pwd: string) => {
-    let score = 0;
-    const length = pwd.length;
-    
-    if (length >= 8) score += 1;
-    if (length >= 12) score += 1;
-    if (length >= 16) score += 1;
-    
-    if (/[a-z]/.test(pwd)) score += 1;
-    if (/[A-Z]/.test(pwd)) score += 1;
-    if (/[0-9]/.test(pwd)) score += 1;
-    if (/[^A-Za-z0-9]/.test(pwd)) score += 1;
-    
-    if (length >= 20) score += 1;
-    
-    return Math.min(score, 5);
   };
 
   const copyToClipboard = async () => {
@@ -126,29 +111,9 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
     setShowSaveModal(true);
   };
 
-  const getStrengthColor = (strength: number) => {
-    if (strength <= 2) return 'bg-red-500';
-    if (strength <= 3) return 'bg-yellow-500';
-    if (strength <= 4) return 'bg-blue-500';
-    return 'bg-green-500';
-  };
-
-  const getStrengthText = (strength: number) => {
-    if (strength <= 2) return 'Weak';
-    if (strength <= 3) return 'Fair';
-    if (strength <= 4) return 'Good';
-    return 'Strong';
-  };
-
   const handleKeywordPasswordGenerated = (keywordPassword: string) => {
     setPassword(keywordPassword);
   };
-
-  useEffect(() => {
-    if (password) {
-      setStrength(calculateStrength(password));
-    }
-  }, [password]);
 
   useEffect(() => {
     generatePassword();
@@ -156,6 +121,7 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
 
   const generatedPasswordCrackTime = password ? calculateCrackTime(password) : null;
   const generatedPasswordBreach = password ? checkPasswordBreach(password) : null;
+  const passwordScore = password ? calculatePasswordScore(password) : null;
 
   return (
     <div className="space-y-6">
@@ -223,25 +189,23 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
                 </div>
               </div>
 
-              {password && (
+              {password && passwordScore && (
                 <>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-300">Password Strength</span>
-                      <span className={`text-sm font-medium ${
-                        strength <= 2 ? 'text-red-400' : 
-                        strength <= 3 ? 'text-yellow-400' : 
-                        strength <= 4 ? 'text-blue-400' : 'text-green-400'
-                      }`}>
-                        {getStrengthText(strength)}
-                      </span>
-                    </div>
-                    <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-                      <div 
-                        className={`h-full transition-all duration-300 ${getStrengthColor(strength)}`}
-                        style={{ width: `${(strength / 5) * 100}%` }}
-                      />
-                    </div>
+                  {/* New Advanced Password Scoring */}
+                  <AdvancedPasswordStrengthIndicator 
+                    password={password} 
+                    showDetailed={showAdvancedScoring} 
+                  />
+                  
+                  <div className="flex justify-center">
+                    <Button
+                      onClick={() => setShowAdvancedScoring(!showAdvancedScoring)}
+                      variant="ghost"
+                      size="sm"
+                      className="text-blue-400 hover:text-blue-300"
+                    >
+                      {showAdvancedScoring ? 'Hide' : 'Show'} Detailed Analysis
+                    </Button>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

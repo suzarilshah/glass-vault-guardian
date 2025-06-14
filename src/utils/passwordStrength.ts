@@ -5,6 +5,7 @@ export interface PasswordStrengthResult {
   isWeak: boolean;
 }
 
+// Legacy compatibility - maps new scoring system to old 0-4 scale
 export const analyzePasswordStrength = (password: string): PasswordStrengthResult => {
   const feedback: string[] = [];
   let score = 0;

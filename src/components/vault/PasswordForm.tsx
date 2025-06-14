@@ -1,13 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Save, RefreshCw } from 'lucide-react';
+import { Save, RefreshCw, BarChart3 } from 'lucide-react';
 import { PasswordGroup, PasswordEntry, FormData } from '@/types/vault';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
+import AdvancedPasswordStrengthIndicator from './AdvancedPasswordStrengthIndicator';
 
 interface PasswordFormProps {
   formData: FormData;
@@ -28,6 +29,8 @@ const PasswordForm: React.FC<PasswordFormProps> = ({
   onSave,
   onCancel
 }) => {
+  const [showAdvancedScoring, setShowAdvancedScoring] = useState(false);
+
   return (
     <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
       <h3 className="text-lg font-semibold text-white mb-4">
@@ -100,8 +103,29 @@ const PasswordForm: React.FC<PasswordFormProps> = ({
         />
       </div>
       
-      {/* Password strength indicator */}
-      <PasswordStrengthIndicator password={formData.password} />
+      {/* Password strength indicators */}
+      {formData.password && (
+        <div className="mt-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAdvancedScoring(!showAdvancedScoring)}
+              className="text-blue-400 hover:text-blue-300 p-1 h-auto"
+            >
+              <BarChart3 className="w-4 h-4 mr-1" />
+              {showAdvancedScoring ? 'Hide' : 'Show'} Detailed Analysis
+            </Button>
+          </div>
+          
+          {showAdvancedScoring ? (
+            <AdvancedPasswordStrengthIndicator password={formData.password} showDetailed={true} />
+          ) : (
+            <PasswordStrengthIndicator password={formData.password} />
+          )}
+        </div>
+      )}
       
       <Textarea
         placeholder="Notes"
