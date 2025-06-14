@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -73,6 +74,9 @@ const PasswordForm: React.FC<PasswordFormProps> = ({
             <SelectValue placeholder="Select group (optional)" />
           </SelectTrigger>
           <SelectContent className="glass-card bg-gray-800 backdrop-blur-xl border-white/20 z-50">
+            <SelectItem value="" className="text-white hover:bg-white/10">
+              Ungrouped
+            </SelectItem>
             {groups.map((group) => (
               <SelectItem key={group.id} value={group.id} className="text-white hover:bg-white/10">
                 {group.name}
@@ -99,7 +103,7 @@ const PasswordForm: React.FC<PasswordFormProps> = ({
         <Button
           onClick={onCancel}
           variant="outline"
-          className="border-white/20 text-white hover:bg-white/10"
+          className="border-white/20 text-gray-300 hover:bg-gray-700 hover:text-white"
         >
           Cancel
         </Button>

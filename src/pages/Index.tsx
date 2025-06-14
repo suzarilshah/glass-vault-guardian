@@ -40,7 +40,7 @@ const Index = () => {
           currentView={currentView}
         />
         
-        {currentView === 'generator' ? (
+        <div style={{ display: currentView === 'generator' ? 'block' : 'none' }}>
           <div className="space-y-6">
             <div className="text-center mb-8">
               <h1 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-white to-green-400 bg-clip-text text-transparent">
@@ -50,12 +50,14 @@ const Index = () => {
             </div>
             <PasswordGenerator masterPassword={masterPassword} />
           </div>
-        ) : (
+        </div>
+        
+        <div style={{ display: currentView === 'vault' ? 'block' : 'none' }}>
           <PasswordVault 
             masterPassword={masterPassword} 
             onMasterPasswordSet={handleMasterPasswordSet}
           />
-        )}
+        </div>
       </div>
     </div>
   );

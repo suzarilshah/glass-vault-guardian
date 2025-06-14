@@ -39,7 +39,7 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({
         <Button
           onClick={onShowTimerSettings}
           variant="outline"
-          className="border-white/20 text-white hover:bg-white/10"
+          className="border-white/20 text-gray-300 hover:bg-gray-700 hover:text-white"
         >
           <Settings className="w-4 h-4 mr-2" />
           Timer
@@ -47,7 +47,7 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({
         <Button
           onClick={onShowGroupManager}
           variant="outline"
-          className="border-white/20 text-white hover:bg-white/10"
+          className="border-white/20 text-gray-300 hover:bg-gray-700 hover:text-white"
         >
           <Users className="w-4 h-4 mr-2" />
           Manage Groups
@@ -55,7 +55,7 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({
         <Button
           onClick={onExportPasswords}
           variant="outline"
-          className="border-white/20 text-white hover:bg-white/10"
+          className="border-white/20 text-gray-300 hover:bg-gray-700 hover:text-white"
         >
           <Download className="w-4 h-4 mr-2" />
           Export
