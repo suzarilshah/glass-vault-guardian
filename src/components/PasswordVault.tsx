@@ -1,6 +1,5 @@
-
 import React from 'react';
-import GroupManager from '../GroupManager';
+import GroupManager from './GroupManager';
 import VaultHeader from './vault/VaultHeader';
 import TimerSettings from './vault/TimerSettings';
 import ExpiredPasswordsAlert from './vault/ExpiredPasswordsAlert';
