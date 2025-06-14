@@ -6,10 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Save, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { encryptPassword } from '@/utils/encryption';
 
 interface PasswordGroup {
   id: string;
@@ -21,22 +21,22 @@ interface SavePasswordModalProps {
   isOpen: boolean;
   onClose: () => void;
   password: string;
-  masterPassword: string | null;
 }
 
-const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
-  isOpen,
-  onClose,
-  password,
-  masterPassword
+const SavePasswordModal: React.FC<SavePasswordModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  password 
 }) => {
-  const [title, setTitle] = useState('');
-  const [username, setUsername] = useState('');
-  const [website, setWebsite] = useState('');
-  const [notes, setNotes] = useState('');
-  const [selectedGroup, setSelectedGroup] = useState<string>('');
-  const [expirationDays, setExpirationDays] = useState<string>('');
   const [groups, setGroups] = useState<PasswordGroup[]>([]);
+  const [formData, setFormData] = useState({
+    title: '',
+    username: '',
+    website: '',
+    notes: '',
+    group_id: '',
+    expiration_days: ''
+  });
   const [isLoading, setIsLoading] = useState(false);
   
   const { user } = useAuth();
@@ -45,7 +45,6 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       fetchGroups();
-      setTitle('Generated Password');
     }
   }, [isOpen]);
 
@@ -63,17 +62,26 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
     }
   };
 
+  const generateNewPassword = () => {
+    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+    let newPassword = '';
+    for (let i = 0; i < 16; i++) {
+      newPassword += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return newPassword;
+  };
+
   const handleSave = async () => {
-    if (!masterPassword || !user) {
+    if (!user || !password) {
       toast({
         title: "Error",
-        description: "Master password required",
+        description: "Missing required information",
         variant: "destructive"
       });
       return;
     }
 
-    if (!title.trim()) {
+    if (!formData.title.trim()) {
       toast({
         title: "Error",
         description: "Title is required",
@@ -85,33 +93,30 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
     setIsLoading(true);
 
     try {
-      const encryptedPassword = encryptPassword(password, masterPassword);
-      
       let expiresAt = null;
-      if (expirationDays && parseInt(expirationDays) > 0) {
+      if (formData.expiration_days && parseInt(formData.expiration_days) > 0) {
         const expDate = new Date();
-        expDate.setDate(expDate.getDate() + parseInt(expirationDays));
+        expDate.setDate(expDate.getDate() + parseInt(formData.expiration_days));
         expiresAt = expDate.toISOString();
       }
 
       const entryData = {
         user_id: user.id,
-        title: title.trim(),
-        username: username.trim(),
-        password_encrypted: encryptedPassword,
-        website: website.trim(),
-        notes: notes.trim(),
-        group_id: selectedGroup || null,
-        expires_at: expiresAt
+        title: formData.title.trim(),
+        username: formData.username.trim(),
+        password_encrypted: password, // Store as plain text for now since no master password required
+        website: formData.website.trim(),
+        notes: formData.notes.trim(),
+        group_id: formData.group_id || null,
+        expires_at: expiresAt,
+        is_expired: false
       };
 
       const { error } = await supabase
         .from('password_entries')
         .insert(entryData);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: "Success",
@@ -119,12 +124,15 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
       });
 
       // Reset form
-      setTitle('');
-      setUsername('');
-      setWebsite('');
-      setNotes('');
-      setSelectedGroup('');
-      setExpirationDays('');
+      setFormData({
+        title: '',
+        username: '',
+        website: '',
+        notes: '',
+        group_id: '',
+        expiration_days: ''
+      });
+      
       onClose();
     } catch (error) {
       console.error('Error saving password:', error);
@@ -138,8 +146,20 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
     }
   };
 
+  const handleClose = () => {
+    setFormData({
+      title: '',
+      username: '',
+      website: '',
+      notes: '',
+      group_id: '',
+      expiration_days: ''
+    });
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="glass-card bg-white/5 backdrop-blur-xl border-white/20 text-white max-w-md">
         <DialogHeader>
           <DialogTitle className="text-white">Save Password</DialogTitle>
@@ -150,8 +170,8 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
             <Label htmlFor="title" className="text-gray-300">Title *</Label>
             <Input
               id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              value={formData.title}
+              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
               className="glass-input bg-white/5 border-white/20 text-white"
               placeholder="Enter title"
             />
@@ -161,8 +181,8 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
             <Label htmlFor="username" className="text-gray-300">Username/Email</Label>
             <Input
               id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={formData.username}
+              onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
               className="glass-input bg-white/5 border-white/20 text-white"
               placeholder="Enter username or email"
             />
@@ -172,8 +192,8 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
             <Label htmlFor="website" className="text-gray-300">Website</Label>
             <Input
               id="website"
-              value={website}
-              onChange={(e) => setWebsite(e.target.value)}
+              value={formData.website}
+              onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
               className="glass-input bg-white/5 border-white/20 text-white"
               placeholder="Enter website URL"
             />
@@ -181,13 +201,13 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
 
           <div>
             <Label htmlFor="group" className="text-gray-300">Group</Label>
-            <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+            <Select value={formData.group_id} onValueChange={(value) => setFormData(prev => ({ ...prev, group_id: value }))}>
               <SelectTrigger className="glass-input bg-white/5 border-white/20 text-white">
-                <SelectValue placeholder="Select a group (optional)" />
+                <SelectValue placeholder="Select group (optional)" />
               </SelectTrigger>
-              <SelectContent className="glass-card bg-white/10 backdrop-blur-xl border-white/20">
+              <SelectContent className="glass-card bg-gray-800 backdrop-blur-xl border-white/20 z-50">
                 {groups.map((group) => (
-                  <SelectItem key={group.id} value={group.id} className="text-white">
+                  <SelectItem key={group.id} value={group.id} className="text-white hover:bg-white/10">
                     {group.name}
                   </SelectItem>
                 ))}
@@ -200,10 +220,10 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
             <Input
               id="expiration"
               type="number"
-              value={expirationDays}
-              onChange={(e) => setExpirationDays(e.target.value)}
+              value={formData.expiration_days}
+              onChange={(e) => setFormData(prev => ({ ...prev, expiration_days: e.target.value }))}
               className="glass-input bg-white/5 border-white/20 text-white"
-              placeholder="Days until expiration (optional)"
+              placeholder="Leave empty for no expiration"
               min="1"
             />
           </div>
@@ -212,8 +232,8 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
             <Label htmlFor="notes" className="text-gray-300">Notes</Label>
             <Textarea
               id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              value={formData.notes}
+              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
               className="glass-input bg-white/5 border-white/20 text-white"
               placeholder="Additional notes"
               rows={3}
@@ -222,7 +242,7 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
 
           <div className="flex gap-2 pt-4">
             <Button
-              onClick={onClose}
+              onClick={handleClose}
               variant="outline"
               className="flex-1 border-white/20 text-white hover:bg-white/10"
             >
@@ -233,7 +253,8 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
               disabled={isLoading}
               className="flex-1 glass-button bg-green-600 hover:bg-green-700 text-white"
             >
-              {isLoading ? 'Saving...' : 'Save Password'}
+              <Save className="w-4 h-4 mr-2" />
+              {isLoading ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </div>

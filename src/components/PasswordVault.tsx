@@ -4,12 +4,13 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Copy, Edit, Trash2, Eye, EyeOff, Download, Save, RefreshCw, Clock, AlertTriangle } from 'lucide-react';
+import { Plus, Copy, Edit, Trash2, Eye, EyeOff, Download, Save, RefreshCw, Clock, AlertTriangle, Users, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { encryptPassword, decryptPassword, hashMasterPassword } from '@/utils/encryption';
 import MasterPasswordModal from './MasterPasswordModal';
+import GroupManager from './GroupManager';
 
 interface PasswordGroup {
   id: string;
@@ -44,6 +45,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
   const [isCreatingMaster, setIsCreatingMaster] = useState(false);
   const [editingEntry, setEditingEntry] = useState<PasswordEntry | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [showGroupManager, setShowGroupManager] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [formData, setFormData] = useState({
     title: '',
@@ -55,8 +57,12 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
     expiration_days: ''
   });
   const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
+  const [lockTimer, setLockTimer] = useState<number | null>(null);
+  const [remainingTime, setRemainingTime] = useState<number>(0);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  const LOCK_TIMEOUT = 5 * 60 * 1000; // 5 minutes in milliseconds
 
   useEffect(() => {
     if (user && !masterPassword) {
@@ -68,8 +74,59 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
     if (masterPassword) {
       fetchEntries();
       fetchGroups();
+      startLockTimer();
     }
   }, [masterPassword]);
+
+  useEffect(() => {
+    return () => {
+      if (lockTimer) {
+        clearTimeout(lockTimer);
+      }
+    };
+  }, [lockTimer]);
+
+  const startLockTimer = () => {
+    if (lockTimer) {
+      clearTimeout(lockTimer);
+    }
+
+    const startTime = Date.now();
+    setRemainingTime(LOCK_TIMEOUT / 1000);
+
+    // Update countdown every second
+    const countdownInterval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, Math.ceil((LOCK_TIMEOUT - elapsed) / 1000));
+      setRemainingTime(remaining);
+
+      if (remaining === 0) {
+        clearInterval(countdownInterval);
+      }
+    }, 1000);
+
+    // Set main timer
+    const newTimer = setTimeout(() => {
+      clearInterval(countdownInterval);
+      setMasterPassword(null);
+      setVisiblePasswords(new Set());
+      setShowForm(false);
+      setEditingEntry(null);
+      toast({
+        title: "Vault Locked",
+        description: "Your vault has been automatically locked for security",
+        variant: "destructive"
+      });
+    }, LOCK_TIMEOUT);
+
+    setLockTimer(newTimer);
+  };
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
 
   const checkMasterPassword = async () => {
     const { data, error } = await supabase
@@ -141,7 +198,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
         onMasterPasswordSet?.(password);
         toast({
           title: "Success",
-          description: "Vault unlocked"
+          description: `Vault unlocked (auto-lock in 5 minutes)`
         });
       } else {
         toast({
@@ -191,7 +248,6 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
       newPassword += charset.charAt(Math.floor(Math.random() * charset.length));
     }
     
-    // Update the form data if we're editing this entry
     if (editingEntry?.id === entryId) {
       setFormData(prev => ({ ...prev, password: newPassword }));
     }
@@ -208,9 +264,8 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
       
       let expiresAt = entry.expires_at;
       if (entry.expires_at) {
-        // Reset expiration if the password had one
         const expDate = new Date();
-        expDate.setDate(expDate.getDate() + 90); // Default to 90 days
+        expDate.setDate(expDate.getDate() + 90);
         expiresAt = expDate.toISOString();
       }
 
@@ -239,6 +294,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
       });
 
       fetchEntries();
+      startLockTimer(); // Reset timer on activity
     } catch (error) {
       toast({
         title: "Error",
@@ -303,6 +359,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
       setEditingEntry(null);
       setShowForm(false);
       fetchEntries();
+      startLockTimer(); // Reset timer on activity
     } catch (error) {
       toast({
         title: "Error",
@@ -318,7 +375,6 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
     try {
       const decryptedPassword = decryptPassword(entry.password_encrypted, masterPassword);
       
-      // Calculate days until expiration
       let expirationDays = '';
       if (entry.expires_at) {
         const expDate = new Date(entry.expires_at);
@@ -341,6 +397,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
       });
       setEditingEntry(entry);
       setShowForm(true);
+      startLockTimer(); // Reset timer on activity
     } catch (error) {
       toast({
         title: "Error",
@@ -370,6 +427,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
       description: "Password deleted"
     });
     fetchEntries();
+    startLockTimer(); // Reset timer on activity
   };
 
   const copyPassword = async (entry: PasswordEntry) => {
@@ -382,6 +440,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
         title: "Copied",
         description: "Password copied to clipboard"
       });
+      startLockTimer(); // Reset timer on activity
     } catch (error) {
       toast({
         title: "Error",
@@ -399,6 +458,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
       newVisible.add(id);
     }
     setVisiblePasswords(newVisible);
+    startLockTimer(); // Reset timer on activity
   };
 
   const exportPasswords = async () => {
@@ -435,6 +495,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
         title: "Success",
         description: "Passwords exported to CSV"
       });
+      startLockTimer(); // Reset timer on activity
     } catch (error) {
       toast({
         title: "Error",
@@ -478,8 +539,24 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-white">Password Vault</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-2xl font-bold text-white">Password Vault</h2>
+          <div className="flex items-center gap-2 px-3 py-1 bg-green-600/20 rounded-lg border border-green-500/30">
+            <Lock className="w-4 h-4 text-green-400" />
+            <span className="text-green-400 text-sm font-medium">
+              Auto-lock: {formatTime(remainingTime)}
+            </span>
+          </div>
+        </div>
         <div className="flex gap-2">
+          <Button
+            onClick={() => setShowGroupManager(true)}
+            variant="outline"
+            className="border-white/20 text-white hover:bg-white/10"
+          >
+            <Users className="w-4 h-4 mr-2" />
+            Manage Groups
+          </Button>
           <Button
             onClick={exportPasswords}
             variant="outline"
@@ -514,10 +591,10 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
           <SelectTrigger className="w-48 glass-input bg-white/5 border-white/20 text-white">
             <SelectValue placeholder="Filter by group" />
           </SelectTrigger>
-          <SelectContent className="glass-card bg-white/10 backdrop-blur-xl border-white/20">
-            <SelectItem value="all" className="text-white">All Groups</SelectItem>
+          <SelectContent className="glass-card bg-gray-800 backdrop-blur-xl border-white/20 z-50">
+            <SelectItem value="all" className="text-white hover:bg-white/10">All Groups</SelectItem>
             {groups.map((group) => (
-              <SelectItem key={group.id} value={group.id} className="text-white">
+              <SelectItem key={group.id} value={group.id} className="text-white hover:bg-white/10">
                 {group.name}
               </SelectItem>
             ))}
@@ -577,9 +654,9 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
               <SelectTrigger className="glass-input bg-white/5 border-white/20 text-white">
                 <SelectValue placeholder="Select group (optional)" />
               </SelectTrigger>
-              <SelectContent className="glass-card bg-white/10 backdrop-blur-xl border-white/20">
+              <SelectContent className="glass-card bg-gray-800 backdrop-blur-xl border-white/20 z-50">
                 {groups.map((group) => (
-                  <SelectItem key={group.id} value={group.id} className="text-white">
+                  <SelectItem key={group.id} value={group.id} className="text-white hover:bg-white/10">
                     {group.name}
                   </SelectItem>
                 ))}
@@ -628,7 +705,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
           const groupName = groups.find(g => g.id === entry.group_id)?.name;
           const isExpired = entry.is_expired;
           const isExpiringSoon = entry.expires_at && !isExpired && 
-            new Date(entry.expires_at).getTime() - new Date().getTime() < 7 * 24 * 60 * 60 * 1000; // 7 days
+            new Date(entry.expires_at).getTime() - new Date().getTime() < 7 * 24 * 60 * 60 * 1000;
 
           return (
             <Card key={entry.id} className={`glass-card p-4 bg-white/5 backdrop-blur-xl border-white/20 ${
@@ -757,6 +834,14 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
           </Button>
         </Card>
       )}
+
+      <GroupManager
+        isOpen={showGroupManager}
+        onClose={() => {
+          setShowGroupManager(false);
+          fetchGroups(); // Refresh groups when modal closes
+        }}
+      />
     </div>
   );
 };

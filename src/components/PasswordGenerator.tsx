@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Copy, RefreshCw, Shield, CheckCircle2, AlertTriangle, Save, Users } from 'lucide-react';
+import { Copy, RefreshCw, Shield, CheckCircle2, AlertTriangle, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
@@ -13,7 +13,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import KeywordObfuscator from './KeywordObfuscator';
 import PasswordAnalyzer from './PasswordAnalyzer';
 import SavePasswordModal from './SavePasswordModal';
-import GroupManager from './GroupManager';
 
 interface PasswordOptions {
   length: number;
@@ -39,7 +38,6 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ masterPassword })
   });
   const [strength, setStrength] = useState(0);
   const [showSaveModal, setShowSaveModal] = useState(false);
-  const [showGroupManager, setShowGroupManager] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -127,15 +125,6 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ masterPassword })
       return;
     }
 
-    if (!masterPassword) {
-      toast({
-        title: "Error",
-        description: "Master password required. Please unlock your vault first.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setShowSaveModal(true);
   };
 
@@ -197,17 +186,6 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ masterPassword })
                   Generated Password
                 </h2>
                 <div className="flex gap-2">
-                  {user && (
-                    <Button
-                      onClick={() => setShowGroupManager(true)}
-                      variant="outline"
-                      size="sm"
-                      className="glass-button border-white/20 text-white hover:bg-white/10"
-                    >
-                      <Users className="w-4 h-4 mr-2" />
-                      Groups
-                    </Button>
-                  )}
                   <Button
                     onClick={generatePassword}
                     variant="outline"
@@ -370,12 +348,6 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ masterPassword })
         isOpen={showSaveModal}
         onClose={() => setShowSaveModal(false)}
         password={password}
-        masterPassword={masterPassword}
-      />
-
-      <GroupManager
-        isOpen={showGroupManager}
-        onClose={() => setShowGroupManager(false)}
       />
     </div>
   );
