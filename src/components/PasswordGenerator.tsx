@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Copy, RefreshCw, Shield, CheckCircle2, AlertTriangle, Download } from 'lucide-react';
+import { Save, Copy, RefreshCw, Shield, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
@@ -208,7 +209,7 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
                       size="sm"
                       className="glass-button text-white hover:text-green-400 hover:bg-white/20"
                     >
-                      <Download className="w-4 h-4" />
+                      <Save className="w-4 h-4" />
                     </Button>
                   )}
                   <Button
@@ -322,4 +323,42 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
                   </div>
                   
                   <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
-                    <label className="text-sm text-gray-3
+                    <label className="text-sm text-gray-300">Numbers (0-9)</label>
+                    <Switch
+                      checked={options.includeNumbers}
+                      onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeNumbers: checked }))}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
+                    <label className="text-sm text-gray-300">Special Characters</label>
+                    <Switch
+                      checked={options.includeSpecialChars}
+                      onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeSpecialChars: checked }))}
+                    />
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <KeywordObfuscator onPasswordGenerated={handleKeywordPasswordGenerated} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="analyzer" className="space-y-6 mt-6">
+          <PasswordAnalyzer />
+        </TabsContent>
+      </Tabs>
+
+      {showSaveModal && (
+        <SavePasswordModal
+          password={password}
+          onClose={() => setShowSaveModal(false)}
+          onSave={() => setShowSaveModal(false)}
+        />
+      )}
+    </div>
+  );
+};
+
+export default PasswordGenerator;
