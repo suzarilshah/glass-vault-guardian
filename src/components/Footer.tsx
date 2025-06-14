@@ -58,7 +58,7 @@ const Footer = () => {
               <span>Open Source</span>
             </a>
             <span className="text-gray-500 text-sm">
-              © 2024 Password Security Suite
+              © 2025 PWShield - developed by Suzaril Shah
             </span>
           </div>
         </div>
