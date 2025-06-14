@@ -6,6 +6,9 @@ import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { calculateCrackTime } from '@/utils/passwordUtils';
+import KeywordObfuscator from './KeywordObfuscator';
+import PasswordAnalyzer from './PasswordAnalyzer';
 
 interface PasswordOptions {
   length: number;
@@ -109,9 +112,15 @@ const PasswordGenerator = () => {
     return 'Strong';
   };
 
+  const handleKeywordPasswordGenerated = (keywordPassword: string) => {
+    setPassword(keywordPassword);
+  };
+
+  const generatedPasswordCrackTime = password ? calculateCrackTime(password) : null;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-6">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-white to-green-400 bg-clip-text text-transparent">
@@ -173,66 +182,86 @@ const PasswordGenerator = () => {
                 />
               </div>
             </div>
+
+            {/* Crack Time Display */}
+            {generatedPasswordCrackTime && (
+              <div className="glass-option p-3 rounded-lg border border-white/10">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-300">Time to crack:</span>
+                  <span className="text-sm font-semibold text-green-400">
+                    {generatedPasswordCrackTime.humanReadable}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </Card>
 
-        {/* Options Card */}
-        <Card className="glass-card p-6 border-0 bg-white/5 backdrop-blur-xl">
-          <h3 className="text-lg font-semibold text-white mb-4">Customization Options</h3>
-          
-          <div className="space-y-6">
-            {/* Length Slider */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-300">Password Length</label>
-                <span className="text-sm text-green-400 font-mono">{options.length} characters</span>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Options Card */}
+          <Card className="glass-card p-6 border-0 bg-white/5 backdrop-blur-xl">
+            <h3 className="text-lg font-semibold text-white mb-4">Customization Options</h3>
+            
+            <div className="space-y-6">
+              {/* Length Slider */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-gray-300">Password Length</label>
+                  <span className="text-sm text-green-400 font-mono">{options.length} characters</span>
+                </div>
+                <Slider
+                  value={[options.length]}
+                  onValueChange={(value) => setOptions(prev => ({ ...prev, length: value[0] }))}
+                  max={64}
+                  min={4}
+                  step={1}
+                  className="slider-custom"
+                />
               </div>
-              <Slider
-                value={[options.length]}
-                onValueChange={(value) => setOptions(prev => ({ ...prev, length: value[0] }))}
-                max={64}
-                min={4}
-                step={1}
-                className="slider-custom"
-              />
-            </div>
 
-            {/* Character Type Options */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
-                <label className="text-sm text-gray-300">Uppercase (A-Z)</label>
-                <Switch
-                  checked={options.includeUppercase}
-                  onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeUppercase: checked }))}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
-                <label className="text-sm text-gray-300">Lowercase (a-z)</label>
-                <Switch
-                  checked={options.includeLowercase}
-                  onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeLowercase: checked }))}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
-                <label className="text-sm text-gray-300">Numbers (0-9)</label>
-                <Switch
-                  checked={options.includeNumbers}
-                  onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeNumbers: checked }))}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
-                <label className="text-sm text-gray-300">Special Characters (!@#$)</label>
-                <Switch
-                  checked={options.includeSpecialChars}
-                  onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeSpecialChars: checked }))}
-                />
+              {/* Character Type Options */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
+                  <label className="text-sm text-gray-300">Uppercase (A-Z)</label>
+                  <Switch
+                    checked={options.includeUppercase}
+                    onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeUppercase: checked }))}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
+                  <label className="text-sm text-gray-300">Lowercase (a-z)</label>
+                  <Switch
+                    checked={options.includeLowercase}
+                    onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeLowercase: checked }))}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
+                  <label className="text-sm text-gray-300">Numbers (0-9)</label>
+                  <Switch
+                    checked={options.includeNumbers}
+                    onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeNumbers: checked }))}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
+                  <label className="text-sm text-gray-300">Special Characters (!@#$)</label>
+                  <Switch
+                    checked={options.includeSpecialChars}
+                    onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeSpecialChars: checked }))}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+
+          {/* Keyword Obfuscator */}
+          <KeywordObfuscator onPasswordGenerated={handleKeywordPasswordGenerated} />
+        </div>
+
+        {/* Password Analyzer */}
+        <PasswordAnalyzer />
       </div>
     </div>
   );
