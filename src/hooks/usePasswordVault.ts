@@ -156,12 +156,14 @@ export const usePasswordVault = ({ masterPassword: propMasterPassword, onMasterP
     if (!masterPassword) return;
     try {
       // Save history before updating!
-      await supabase.from('password_histories').insert({
-        entry_id: entry.id,
-        user_id: user?.id,
-        password_encrypted: entry.password_encrypted,
-        changed_at: new Date().toISOString(),
-      });
+      await supabase
+        .from('password_histories')
+        .insert({
+          entry_id: entry.id,
+          user_id: user?.id,
+          password_encrypted: entry.password_encrypted,
+          changed_at: new Date().toISOString(),
+        });
       const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
       let newPassword = '';
       for (let i = 0; i < 16; i++) newPassword += charset.charAt(Math.floor(Math.random() * charset.length));

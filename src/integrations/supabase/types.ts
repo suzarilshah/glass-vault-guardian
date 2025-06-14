@@ -89,6 +89,38 @@ export type Database = {
         }
         Relationships: []
       }
+      password_histories: {
+        Row: {
+          changed_at: string
+          entry_id: string
+          id: string
+          password_encrypted: string
+          user_id: string
+        }
+        Insert: {
+          changed_at?: string
+          entry_id: string
+          id?: string
+          password_encrypted: string
+          user_id: string
+        }
+        Update: {
+          changed_at?: string
+          entry_id?: string
+          id?: string
+          password_encrypted?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "password_histories_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "password_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
