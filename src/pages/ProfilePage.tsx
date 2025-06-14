@@ -1,16 +1,17 @@
-
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { User, Mail, Lock, Shield, Save } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const ProfilePage: React.FC = () => {
   const { user, session } = useAuth();
   const { toast } = useToast();
 
-  // Local profile state
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({
     email: user?.email || '',
@@ -54,7 +55,6 @@ const ProfilePage: React.FC = () => {
       });
   }, [user, toast]);
 
-  // Update simple profile fields (name etc)
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -87,7 +87,6 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  // Handle email update
   const handleEmailUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editEmail || !user) return;
@@ -112,7 +111,6 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  // Handle password update
   const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editPassword || !user) return;
@@ -136,16 +134,13 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  // Handle master password update (assume master password handling outside supabase auth, e.g. in a user_master_passwords table)
   const handleMasterPasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !editMasterPassword) return;
     setSaving(true);
 
-    // Hash the master password before storing (for demo: store plaintext, in real app: use proper hashing)
-    const hash = editMasterPassword; // Replace with hash function in real app!
+    const hash = editMasterPassword;
 
-    // Upsert for user_id
     const { error } = await supabase
       .from('user_master_passwords')
       .upsert(
@@ -156,7 +151,7 @@ const ProfilePage: React.FC = () => {
             updated_at: new Date().toISOString(),
           },
         ],
-        { onConflict: 'user_id' } // <-- FIXED HERE
+        { onConflict: 'user_id' }
       );
     setSaving(false);
     if (error) {
@@ -174,141 +169,210 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  // Avatar upload - TODO: integrate storage if needed
-
   if (!user) {
     return null;
   }
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-white">Loading profile...</div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
+        <div className="text-white">Loading profile...</div>
+      </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto pt-10 pb-16">
-      <h2 className="text-2xl font-bold text-white mb-6">User Profile</h2>
-      <form className="space-y-6 glass-card p-6 mb-6" onSubmit={handleProfileSave}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">First Name</label>
-            <Input
-              value={profile.first_name}
-              onChange={e => setProfile(p => ({ ...p, first_name: e.target.value }))}
-              className="bg-white/10 border-white/20 text-white"
-              placeholder="First Name"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">Last Name</label>
-            <Input
-              value={profile.last_name}
-              onChange={e => setProfile(p => ({ ...p, last_name: e.target.value }))}
-              className="bg-white/10 border-white/20 text-white"
-              placeholder="Last Name"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">Full Name</label>
-            <Input
-              value={profile.full_name}
-              onChange={e => setProfile(p => ({ ...p, full_name: e.target.value }))}
-              className="bg-white/10 border-white/20 text-white"
-              placeholder="Full Name"
-            />
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <Link 
+            to="/" 
+            className="inline-flex items-center text-green-400 hover:text-green-300 mb-4 transition-colors"
+          >
+            ← Back to Dashboard
+          </Link>
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-white to-green-400 bg-clip-text text-transparent">
+              User Profile
+            </h1>
+            <p className="text-gray-400">Manage your account settings and security</p>
           </div>
         </div>
-        {/* Avatar (future) */}
-        {/* <div>
-          <label className="block text-sm text-gray-300 mb-1">Avatar URL</label>
-          <Input
-            value={avatarUrl}
-            onChange={e => setAvatarUrl(e.target.value)}
-            className="bg-white/10 border-white/20 text-white"
-            placeholder="Paste image URL"
-          />
-        </div> */}
-        <Button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white border border-blue-400 font-semibold"
-          disabled={saving}
-        >
-          Save Profile
-        </Button>
-      </form>
 
-      {/* Email */}
-      <form className="space-y-4 glass-card p-6 mb-6" onSubmit={handleEmailUpdate}>
-        <div>
-          <label className="block text-sm text-gray-300 mb-1">Email</label>
-          <Input
-            value={profile.email}
-            disabled
-            className="bg-white/10 border-white/20 text-white"
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-gray-300 mb-1">Change Email</label>
-          <Input
-            value={editEmail}
-            onChange={e => setEditEmail(e.target.value)}
-            type="email"
-            placeholder="Enter new email"
-            className="bg-white/10 border-white/20 text-white"
-          />
-        </div>
-        <Button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white border border-blue-400 font-semibold"
-          disabled={saving}
-        >
-          Update Email
-        </Button>
-      </form>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Profile Information */}
+          <Card className="glass-card bg-white/5 backdrop-blur-xl border-white/20">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <User className="w-5 h-5 text-green-400" />
+                Profile Information
+              </CardTitle>
+              <CardDescription className="text-gray-400">
+                Update your personal information
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleProfileSave} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-2">First Name</label>
+                    <Input
+                      value={profile.first_name}
+                      onChange={e => setProfile(p => ({ ...p, first_name: e.target.value }))}
+                      className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                      placeholder="First Name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-2">Last Name</label>
+                    <Input
+                      value={profile.last_name}
+                      onChange={e => setProfile(p => ({ ...p, last_name: e.target.value }))}
+                      className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                      placeholder="Last Name"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2">Full Name</label>
+                  <Input
+                    value={profile.full_name}
+                    onChange={e => setProfile(p => ({ ...p, full_name: e.target.value }))}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                    placeholder="Full Name"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white border border-green-400 font-semibold transition-all duration-200"
+                  disabled={saving}
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {saving ? 'Saving...' : 'Save Profile'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
 
-      {/* Password */}
-      <form className="space-y-4 glass-card p-6 mb-6" onSubmit={handlePasswordUpdate}>
-        <div>
-          <label className="block text-sm text-gray-300 mb-1">Change Password</label>
-          <Input
-            value={editPassword}
-            onChange={e => setEditPassword(e.target.value)}
-            type="password"
-            placeholder="Enter new password"
-            minLength={8}
-            className="bg-white/10 border-white/20 text-white"
-          />
-        </div>
-        <Button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white border border-blue-400 font-semibold"
-          disabled={saving}
-        >
-          Update Password
-        </Button>
-      </form>
+          {/* Email Settings */}
+          <Card className="glass-card bg-white/5 backdrop-blur-xl border-white/20">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Mail className="w-5 h-5 text-green-400" />
+                Email Settings
+              </CardTitle>
+              <CardDescription className="text-gray-400">
+                Update your email address
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleEmailUpdate} className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2">Current Email</label>
+                  <Input
+                    value={profile.email}
+                    disabled
+                    className="bg-white/5 border-white/10 text-gray-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2">New Email</label>
+                  <Input
+                    value={editEmail}
+                    onChange={e => setEditEmail(e.target.value)}
+                    type="email"
+                    placeholder="Enter new email"
+                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white border border-blue-400 font-semibold transition-all duration-200"
+                  disabled={saving || !editEmail}
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  {saving ? 'Updating...' : 'Update Email'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
 
-      {/* Master Password */}
-      <form className="space-y-4 glass-card p-6" onSubmit={handleMasterPasswordUpdate}>
-        <div>
-          <label className="block text-sm text-gray-300 mb-1">Change Master Password</label>
-          <Input
-            value={editMasterPassword}
-            onChange={e => setEditMasterPassword(e.target.value)}
-            type="password"
-            placeholder="Enter new master password"
-            minLength={8}
-            className="bg-white/10 border-white/20 text-white"
-          />
+          {/* Password Settings */}
+          <Card className="glass-card bg-white/5 backdrop-blur-xl border-white/20">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Lock className="w-5 h-5 text-green-400" />
+                Password Settings
+              </CardTitle>
+              <CardDescription className="text-gray-400">
+                Change your account password
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handlePasswordUpdate} className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2">New Password</label>
+                  <Input
+                    value={editPassword}
+                    onChange={e => setEditPassword(e.target.value)}
+                    type="password"
+                    placeholder="Enter new password"
+                    minLength={8}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Must be at least 8 characters</p>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-orange-600 hover:bg-orange-700 text-white border border-orange-400 font-semibold transition-all duration-200"
+                  disabled={saving || !editPassword}
+                >
+                  <Lock className="w-4 h-4 mr-2" />
+                  {saving ? 'Updating...' : 'Update Password'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Master Password Settings */}
+          <Card className="glass-card bg-white/5 backdrop-blur-xl border-white/20">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Shield className="w-5 h-5 text-green-400" />
+                Master Password
+              </CardTitle>
+              <CardDescription className="text-gray-400">
+                Update your vault master password
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleMasterPasswordUpdate} className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2">New Master Password</label>
+                  <Input
+                    value={editMasterPassword}
+                    onChange={e => setEditMasterPassword(e.target.value)}
+                    type="password"
+                    placeholder="Enter new master password"
+                    minLength={8}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">This secures your password vault</p>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white border border-red-400 font-semibold transition-all duration-200"
+                  disabled={saving || !editMasterPassword}
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  {saving ? 'Updating...' : 'Update Master Password'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
         </div>
-        <Button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white border border-blue-400 font-semibold"
-          disabled={saving}
-        >
-          Update Master Password
-        </Button>
-      </form>
+      </div>
     </div>
   );
 };
