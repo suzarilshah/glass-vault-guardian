@@ -353,9 +353,9 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
 
       {showSaveModal && (
         <SavePasswordModal
+          isOpen={showSaveModal}
           password={password}
           onClose={() => setShowSaveModal(false)}
-          onSave={() => setShowSaveModal(false)}
         />
       )}
     </div>
