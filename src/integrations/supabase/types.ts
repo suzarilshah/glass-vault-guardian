@@ -9,6 +9,127 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      api_entries: {
+        Row: {
+          api_key_encrypted: string
+          api_name: string | null
+          api_secret_encrypted: string | null
+          created_at: string
+          description: string | null
+          endpoint_url: string | null
+          environment: string | null
+          expires_at: string | null
+          group_id: string | null
+          id: string
+          is_expired: boolean | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_key_encrypted: string
+          api_name?: string | null
+          api_secret_encrypted?: string | null
+          created_at?: string
+          description?: string | null
+          endpoint_url?: string | null
+          environment?: string | null
+          expires_at?: string | null
+          group_id?: string | null
+          id?: string
+          is_expired?: boolean | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_key_encrypted?: string
+          api_name?: string | null
+          api_secret_encrypted?: string | null
+          created_at?: string
+          description?: string | null
+          endpoint_url?: string | null
+          environment?: string | null
+          expires_at?: string | null
+          group_id?: string | null
+          id?: string
+          is_expired?: boolean | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_entries_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "api_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_groups: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      api_histories: {
+        Row: {
+          api_key_encrypted: string
+          api_secret_encrypted: string | null
+          changed_at: string
+          entry_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          api_key_encrypted: string
+          api_secret_encrypted?: string | null
+          changed_at?: string
+          entry_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          api_key_encrypted?: string
+          api_secret_encrypted?: string | null
+          changed_at?: string
+          entry_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_histories_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "api_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       password_entries: {
         Row: {
           created_at: string

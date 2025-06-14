@@ -1,23 +1,25 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import PasswordGenerator from '@/components/PasswordGenerator';
 import PasswordVault from '@/components/PasswordVault';
+import ApiVault from '@/components/ApiVault';
 import AuthPage from '@/components/AuthPage';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
 const Index = () => {
   const { user, loading } = useAuth();
-  const [currentView, setCurrentView] = useState<'generator' | 'vault'>('generator');
+  const [currentView, setCurrentView] = useState<'generator' | 'vault' | 'api-vault'>('generator');
   const [masterPassword, setMasterPassword] = useState<string | null>(null);
 
   const handleMasterPasswordSet = (password: string | null) => {
     setMasterPassword(password);
   };
 
-  const handleNavigation = (view: 'generator' | 'vault') => {
+  const handleNavigation = (view: 'generator' | 'vault' | 'api-vault') => {
     setCurrentView(view);
-    // Clear master password only when leaving vault view
+    // Clear master password only when leaving vault views
     if (view === 'generator') {
       setMasterPassword(null);
     }
@@ -40,7 +42,8 @@ const Index = () => {
       <div className="flex-1 p-6">
         <div className="max-w-6xl mx-auto">
           <Navbar 
-            onShowVault={() => handleNavigation('vault')} 
+            onShowVault={() => handleNavigation('vault')}
+            onShowApiVault={() => handleNavigation('api-vault')}
             currentView={currentView}
           />
           
@@ -58,6 +61,13 @@ const Index = () => {
           
           <div style={{ display: currentView === 'vault' ? 'block' : 'none' }}>
             <PasswordVault 
+              masterPassword={masterPassword} 
+              onMasterPasswordSet={handleMasterPasswordSet}
+            />
+          </div>
+
+          <div style={{ display: currentView === 'api-vault' ? 'block' : 'none' }}>
+            <ApiVault 
               masterPassword={masterPassword} 
               onMasterPasswordSet={handleMasterPasswordSet}
             />

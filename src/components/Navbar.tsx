@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Shield, LogOut, User, Key } from 'lucide-react';
+import { Shield, LogOut, User, Key, Database } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   DropdownMenu,
@@ -13,10 +14,11 @@ import { Link } from "react-router-dom";
 
 interface NavbarProps {
   onShowVault: () => void;
-  currentView: 'generator' | 'vault';
+  onShowApiVault: () => void;
+  currentView: 'generator' | 'vault' | 'api-vault';
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onShowVault, currentView }) => {
+const Navbar: React.FC<NavbarProps> = ({ onShowVault, onShowApiVault, currentView }) => {
   const { user, signOut } = useAuth();
 
   return (
@@ -47,6 +49,15 @@ const Navbar: React.FC<NavbarProps> = ({ onShowVault, currentView }) => {
               >
                 <Shield className="w-4 h-4 mr-2" />
                 Password Vault
+              </Button>
+              <Button
+                variant={currentView === 'api-vault' ? 'default' : 'ghost'}
+                size="sm"
+                className="text-white"
+                onClick={onShowApiVault}
+              >
+                <Database className="w-4 h-4 mr-2" />
+                API Vault
               </Button>
             </div>
           )}
