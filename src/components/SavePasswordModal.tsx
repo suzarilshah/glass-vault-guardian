@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Save, RefreshCw } from 'lucide-react';
+import { Save, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +29,8 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
   password 
 }) => {
   const [groups, setGroups] = useState<PasswordGroup[]>([]);
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [newGroupData, setNewGroupData] = useState({ name: '', description: '' });
   const [formData, setFormData] = useState({
     title: '',
     username: '',
@@ -38,6 +40,7 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
     expiration_days: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -62,13 +65,52 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
     }
   };
 
-  const generateNewPassword = () => {
-    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
-    let newPassword = '';
-    for (let i = 0; i < 16; i++) {
-      newPassword += charset.charAt(Math.floor(Math.random() * charset.length));
+  const handleCreateGroup = async () => {
+    if (!user || !newGroupData.name.trim()) {
+      toast({
+        title: "Error",
+        description: "Group name is required",
+        variant: "destructive"
+      });
+      return;
     }
-    return newPassword;
+
+    setIsCreatingGroup(true);
+
+    try {
+      const groupData = {
+        user_id: user.id,
+        name: newGroupData.name.trim(),
+        description: newGroupData.description.trim()
+      };
+
+      const { data, error } = await supabase
+        .from('password_groups')
+        .insert(groupData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Group created successfully"
+      });
+
+      setFormData(prev => ({ ...prev, group_id: data.id }));
+      setNewGroupData({ name: '', description: '' });
+      setShowCreateGroup(false);
+      fetchGroups();
+    } catch (error) {
+      console.error('Error creating group:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create group",
+        variant: "destructive"
+      });
+    } finally {
+      setIsCreatingGroup(false);
+    }
   };
 
   const handleSave = async () => {
@@ -104,7 +146,7 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
         user_id: user.id,
         title: formData.title.trim(),
         username: formData.username.trim(),
-        password_encrypted: password, // Store as plain text for now since no master password required
+        password_encrypted: password,
         website: formData.website.trim(),
         notes: formData.notes.trim(),
         group_id: formData.group_id || null,
@@ -123,7 +165,6 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
         description: "Password saved successfully"
       });
 
-      // Reset form
       setFormData({
         title: '',
         username: '',
@@ -155,6 +196,8 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
       group_id: '',
       expiration_days: ''
     });
+    setNewGroupData({ name: '', description: '' });
+    setShowCreateGroup(false);
     onClose();
   };
 
@@ -200,7 +243,57 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
           </div>
 
           <div>
-            <Label htmlFor="group" className="text-gray-300">Group</Label>
+            <div className="flex items-center justify-between mb-2">
+              <Label htmlFor="group" className="text-gray-300">Group</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowCreateGroup(!showCreateGroup)}
+                className="text-green-400 hover:text-green-300 p-1 h-auto"
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                New Group
+              </Button>
+            </div>
+            
+            {showCreateGroup && (
+              <div className="space-y-2 mb-3 p-3 bg-white/5 rounded border border-white/10">
+                <Input
+                  placeholder="Group name"
+                  value={newGroupData.name}
+                  onChange={(e) => setNewGroupData(prev => ({ ...prev, name: e.target.value }))}
+                  className="glass-input bg-white/5 border-white/20 text-white text-sm"
+                />
+                <Input
+                  placeholder="Description (optional)"
+                  value={newGroupData.description}
+                  onChange={(e) => setNewGroupData(prev => ({ ...prev, description: e.target.value }))}
+                  className="glass-input bg-white/5 border-white/20 text-white text-sm"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setShowCreateGroup(false)}
+                    variant="outline"
+                    className="text-xs border-white/20 text-white hover:bg-white/10"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleCreateGroup}
+                    disabled={isCreatingGroup}
+                    className="text-xs glass-button bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {isCreatingGroup ? 'Creating...' : 'Create'}
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <Select value={formData.group_id} onValueChange={(value) => setFormData(prev => ({ ...prev, group_id: value }))}>
               <SelectTrigger className="glass-input bg-white/5 border-white/20 text-white">
                 <SelectValue placeholder="Select group (optional)" />
