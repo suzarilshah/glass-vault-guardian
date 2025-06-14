@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Copy, RefreshCw, Shield, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -92,10 +93,10 @@ const PasswordGenerator = () => {
   };
 
   const getStrengthColor = (strength: number) => {
-    if (strength <= 2) return 'bg-red-500';
-    if (strength <= 3) return 'bg-yellow-500';
-    if (strength <= 4) return 'bg-blue-500';
-    return 'bg-green-500';
+    if (strength <= 2) return 'bg-gradient-to-r from-red-500 to-red-600';
+    if (strength <= 3) return 'bg-gradient-to-r from-yellow-500 to-orange-500';
+    if (strength <= 4) return 'bg-gradient-to-r from-blue-500 to-purple-500';
+    return 'bg-gradient-to-r from-green-500 to-emerald-500';
   };
 
   const getStrengthText = (strength: number) => {
@@ -105,44 +106,64 @@ const PasswordGenerator = () => {
     return 'Strong';
   };
 
+  const getStrengthTextColor = (strength: number) => {
+    if (strength <= 2) return 'text-red-400';
+    if (strength <= 3) return 'text-yellow-400';
+    if (strength <= 4) return 'text-blue-400';
+    return 'text-green-400';
+  };
+
   const handleKeywordPasswordGenerated = (keywordPassword: string) => {
     setPassword(keywordPassword);
   };
+
+  useEffect(() => {
+    if (password) {
+      setStrength(calculateStrength(password));
+    }
+  }, [password]);
 
   const generatedPasswordCrackTime = password ? calculateCrackTime(password) : null;
   const generatedPasswordBreach = password ? checkPasswordBreach(password) : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 p-6 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+        <div className="absolute top-40 left-40 w-60 h-60 bg-green-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+      </div>
+
+      <div className="max-w-4xl mx-auto space-y-6 relative z-10">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-white to-green-400 bg-clip-text text-transparent">
+          <h1 className="text-5xl font-bold text-white mb-2 bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 bg-clip-text text-transparent animate-pulse-glow">
             Password Security Suite
           </h1>
-          <p className="text-gray-400">Generate secure passwords and analyze their strength</p>
+          <p className="text-gray-300 text-lg">Generate secure passwords and analyze their strength</p>
         </div>
 
         {/* Tabs */}
         <Tabs defaultValue="generator" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 glass-card bg-white/5 backdrop-blur-xl border-white/20">
+          <TabsList className="grid w-full grid-cols-2 glass-card bg-white/5 backdrop-blur-xl border-0 vibrant-tabs">
             <TabsTrigger 
               value="generator" 
-              className="text-white data-[state=active]:bg-white/10 data-[state=active]:text-green-400"
+              className="text-white transition-all duration-300"
             >
-              Password Generator
+              🔐 Password Generator
             </TabsTrigger>
             <TabsTrigger 
               value="analyzer" 
-              className="text-white data-[state=active]:bg-white/10 data-[state=active]:text-green-400"
+              className="text-white transition-all duration-300"
             >
-              Password Analyzer
+              🔍 Password Analyzer
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="generator" className="space-y-6 mt-6">
             {/* Main Password Card */}
-            <Card className="glass-card mb-6 p-6 border-0 bg-white/5 backdrop-blur-xl">
+            <Card className="glass-card mb-6 p-6 border-0 bg-white/5 backdrop-blur-xl animate-glass-glow">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold text-white flex items-center gap-2">
@@ -153,7 +174,7 @@ const PasswordGenerator = () => {
                     onClick={generatePassword}
                     variant="outline"
                     size="sm"
-                    className="glass-button border-white/20 text-white hover:bg-white/10"
+                    className="glass-button border-0 text-white hover:text-white"
                   >
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Regenerate
@@ -161,7 +182,7 @@ const PasswordGenerator = () => {
                 </div>
                 
                 <div className="relative">
-                  <div className="glass-input p-4 rounded-lg border border-white/20 bg-white/5 font-mono text-lg text-white break-all">
+                  <div className="glass-input p-4 rounded-lg border-0 bg-gradient-to-r from-white/5 to-white/10 font-mono text-lg text-white break-all min-h-[60px] flex items-center">
                     {password || 'Click regenerate to create a password'}
                   </div>
                   <Button
@@ -179,17 +200,13 @@ const PasswordGenerator = () => {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-300">Password Strength</span>
-                    <span className={`text-sm font-medium ${
-                      strength <= 2 ? 'text-red-400' : 
-                      strength <= 3 ? 'text-yellow-400' : 
-                      strength <= 4 ? 'text-blue-400' : 'text-green-400'
-                    }`}>
+                    <span className={`text-sm font-medium ${getStrengthTextColor(strength)}`}>
                       {getStrengthText(strength)}
                     </span>
                   </div>
-                  <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                  <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden backdrop-blur-sm">
                     <div 
-                      className={`h-full transition-all duration-300 ${getStrengthColor(strength)}`}
+                      className={`h-full transition-all duration-500 ${getStrengthColor(strength)} shadow-lg`}
                       style={{ width: `${(strength / 5) * 100}%` }}
                     />
                   </div>
@@ -200,31 +217,31 @@ const PasswordGenerator = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Breach Status */}
                     {generatedPasswordBreach && (
-                      <div className="glass-option p-3 rounded-lg border border-white/10">
-                        <div className="flex items-center gap-2 mb-1">
+                      <div className="glass-option p-4 rounded-lg border-0 bg-gradient-to-r from-white/5 to-white/10">
+                        <div className="flex items-center gap-2 mb-2">
                           {generatedPasswordBreach.isBreached ? 
-                            <AlertTriangle className="w-4 h-4 text-red-400" /> : 
-                            <CheckCircle2 className="w-4 h-4 text-green-400" />
+                            <AlertTriangle className="w-5 h-5 text-red-400" /> : 
+                            <CheckCircle2 className="w-5 h-5 text-green-400" />
                           }
-                          <span className="text-sm text-gray-300">Breach Status:</span>
+                          <span className="text-sm text-gray-300 font-medium">Breach Status:</span>
                         </div>
-                        <span className={`text-sm font-semibold ${
+                        <span className={`text-sm font-bold ${
                           generatedPasswordBreach.isBreached ? 'text-red-400' : 'text-green-400'
                         }`}>
-                          {generatedPasswordBreach.isBreached ? 'Compromised' : 'Safe'}
+                          {generatedPasswordBreach.isBreached ? '⚠️ Compromised' : '✅ Safe'}
                         </span>
                       </div>
                     )}
 
                     {/* Crack Time */}
                     {generatedPasswordCrackTime && (
-                      <div className="glass-option p-3 rounded-lg border border-white/10">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-300">Time to crack:</span>
-                          <span className="text-sm font-semibold text-green-400">
-                            {generatedPasswordCrackTime.humanReadable}
-                          </span>
+                      <div className="glass-option p-4 rounded-lg border-0 bg-gradient-to-r from-white/5 to-white/10">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm text-gray-300 font-medium">⏱️ Time to crack:</span>
                         </div>
+                        <span className="text-sm font-bold text-green-400">
+                          {generatedPasswordCrackTime.humanReadable}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -235,14 +252,18 @@ const PasswordGenerator = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Options Card */}
               <Card className="glass-card p-6 border-0 bg-white/5 backdrop-blur-xl">
-                <h3 className="text-lg font-semibold text-white mb-4">Customization Options</h3>
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  ⚙️ Customization Options
+                </h3>
                 
                 <div className="space-y-6">
                   {/* Length Slider */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium text-gray-300">Password Length</label>
-                      <span className="text-sm text-green-400 font-mono">{options.length} characters</span>
+                      <label className="text-sm font-medium text-gray-300">📏 Password Length</label>
+                      <span className="text-sm text-green-400 font-mono bg-green-400/10 px-2 py-1 rounded">
+                        {options.length} characters
+                      </span>
                     </div>
                     <Slider
                       value={[options.length]}
@@ -256,32 +277,40 @@ const PasswordGenerator = () => {
 
                   {/* Character Type Options */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
-                      <label className="text-sm text-gray-300">Uppercase (A-Z)</label>
+                    <div className="flex items-center justify-between glass-option p-4 rounded-lg border-0 bg-gradient-to-r from-white/5 to-white/10">
+                      <label className="text-sm text-gray-300 flex items-center gap-2">
+                        🔤 Uppercase (A-Z)
+                      </label>
                       <Switch
                         checked={options.includeUppercase}
                         onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeUppercase: checked }))}
                       />
                     </div>
                     
-                    <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
-                      <label className="text-sm text-gray-300">Lowercase (a-z)</label>
+                    <div className="flex items-center justify-between glass-option p-4 rounded-lg border-0 bg-gradient-to-r from-white/5 to-white/10">
+                      <label className="text-sm text-gray-300 flex items-center gap-2">
+                        🔡 Lowercase (a-z)
+                      </label>
                       <Switch
                         checked={options.includeLowercase}
                         onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeLowercase: checked }))}
                       />
                     </div>
                     
-                    <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
-                      <label className="text-sm text-gray-300">Numbers (0-9)</label>
+                    <div className="flex items-center justify-between glass-option p-4 rounded-lg border-0 bg-gradient-to-r from-white/5 to-white/10">
+                      <label className="text-sm text-gray-300 flex items-center gap-2">
+                        🔢 Numbers (0-9)
+                      </label>
                       <Switch
                         checked={options.includeNumbers}
                         onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeNumbers: checked }))}
                       />
                     </div>
                     
-                    <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
-                      <label className="text-sm text-gray-300">Special Characters (!@#$)</label>
+                    <div className="flex items-center justify-between glass-option p-4 rounded-lg border-0 bg-gradient-to-r from-white/5 to-white/10">
+                      <label className="text-sm text-gray-300 flex items-center gap-2">
+                        🔣 Special (!@#$)
+                      </label>
                       <Switch
                         checked={options.includeSpecialChars}
                         onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeSpecialChars: checked }))}
