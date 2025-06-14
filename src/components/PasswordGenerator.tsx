@@ -297,6 +297,14 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ masterPassword })
                     step={1}
                     className="slider-custom"
                   />
+                  {options.length < 10 && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <AlertTriangle className="w-4 h-4 text-red-400" />
+                      <span className="text-sm text-red-400 font-medium">
+                        Warning: Secure passwords require 10 or more characters
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

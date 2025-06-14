@@ -11,8 +11,13 @@ const Index = () => {
   const [currentView, setCurrentView] = useState<'generator' | 'vault'>('generator');
   const [masterPassword, setMasterPassword] = useState<string | null>(null);
 
-  const handleMasterPasswordSet = (password: string) => {
+  const handleMasterPasswordSet = (password: string | null) => {
     setMasterPassword(password);
+  };
+
+  const handleNavigation = (view: 'generator' | 'vault') => {
+    setCurrentView(view);
+    // Don't clear master password when switching views
   };
 
   if (loading) {
@@ -31,7 +36,7 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-6">
       <div className="max-w-6xl mx-auto">
         <Navbar 
-          onShowVault={() => setCurrentView('vault')} 
+          onShowVault={() => handleNavigation('vault')} 
           currentView={currentView}
         />
         

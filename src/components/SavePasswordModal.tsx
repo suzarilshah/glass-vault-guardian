@@ -46,22 +46,31 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && user) {
       fetchGroups();
     }
-  }, [isOpen]);
+  }, [isOpen, user]);
 
   const fetchGroups = async () => {
     if (!user) return;
     
-    const { data, error } = await supabase
-      .from('password_groups')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('name');
+    try {
+      const { data, error } = await supabase
+        .from('password_groups')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name');
 
-    if (!error && data) {
-      setGroups(data);
+      if (error) {
+        console.error('Error fetching groups:', error);
+        return;
+      }
+
+      if (data) {
+        setGroups(data);
+      }
+    } catch (error) {
+      console.error('Error in fetchGroups:', error);
     }
   };
 
@@ -90,7 +99,10 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating group:', error);
+        throw error;
+      }
 
       toast({
         title: "Success",
@@ -100,7 +112,9 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
       setFormData(prev => ({ ...prev, group_id: data.id }));
       setNewGroupData({ name: '', description: '' });
       setShowCreateGroup(false);
-      fetchGroups();
+      
+      // Refresh groups list
+      await fetchGroups();
     } catch (error) {
       console.error('Error creating group:', error);
       toast({
@@ -146,7 +160,7 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
         user_id: user.id,
         title: formData.title.trim(),
         username: formData.username.trim(),
-        password_encrypted: password,
+        password_encrypted: password, // Password should already be encrypted
         website: formData.website.trim(),
         notes: formData.notes.trim(),
         group_id: formData.group_id || null,
@@ -158,23 +172,17 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
         .from('password_entries')
         .insert(entryData);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error saving password:', error);
+        throw error;
+      }
 
       toast({
         title: "Success",
         description: "Password saved successfully"
       });
 
-      setFormData({
-        title: '',
-        username: '',
-        website: '',
-        notes: '',
-        group_id: '',
-        expiration_days: ''
-      });
-      
-      onClose();
+      handleClose();
     } catch (error) {
       console.error('Error saving password:', error);
       toast({
@@ -198,6 +206,8 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
     });
     setNewGroupData({ name: '', description: '' });
     setShowCreateGroup(false);
+    setIsLoading(false);
+    setIsCreatingGroup(false);
     onClose();
   };
 
@@ -338,6 +348,7 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
               onClick={handleClose}
               variant="outline"
               className="flex-1 border-white/20 text-white hover:bg-white/10"
+              disabled={isLoading}
             >
               Cancel
             </Button>

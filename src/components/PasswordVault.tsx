@@ -65,8 +65,16 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
   const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
   const [lockTimer, setLockTimer] = useState<NodeJS.Timeout | null>(null);
   const [remainingTime, setRemainingTime] = useState<number>(0);
+  const [countdownInterval, setCountdownInterval] = useState<NodeJS.Timeout | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Sync with prop changes
+  useEffect(() => {
+    if (propMasterPassword && propMasterPassword !== masterPassword) {
+      setMasterPassword(propMasterPassword);
+    }
+  }, [propMasterPassword, masterPassword]);
 
   useEffect(() => {
     if (user && !masterPassword) {
@@ -80,19 +88,27 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
       fetchGroups();
       startLockTimer();
     }
-  }, [masterPassword, lockTimeoutMinutes]);
+  }, [masterPassword]);
 
+  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       if (lockTimer) {
         clearTimeout(lockTimer);
       }
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+      }
     };
-  }, [lockTimer]);
+  }, [lockTimer, countdownInterval]);
 
   const startLockTimer = () => {
+    // Clear existing timers
     if (lockTimer) {
       clearTimeout(lockTimer);
+    }
+    if (countdownInterval) {
+      clearInterval(countdownInterval);
     }
 
     const timeoutMs = lockTimeoutMinutes * 60 * 1000;
@@ -100,23 +116,26 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
     setRemainingTime(timeoutMs / 1000);
 
     // Update countdown every second
-    const countdownInterval = setInterval(() => {
+    const newCountdownInterval = setInterval(() => {
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(0, Math.ceil((timeoutMs - elapsed) / 1000));
       setRemainingTime(remaining);
 
       if (remaining === 0) {
-        clearInterval(countdownInterval);
+        clearInterval(newCountdownInterval);
       }
     }, 1000);
 
+    setCountdownInterval(newCountdownInterval);
+
     // Set main timer
     const newTimer = setTimeout(() => {
-      clearInterval(countdownInterval);
+      clearInterval(newCountdownInterval);
       setMasterPassword(null);
       setVisiblePasswords(new Set());
       setShowForm(false);
       setEditingEntry(null);
+      onMasterPasswordSet?.(null);
       toast({
         title: "Vault Locked",
         description: "Your vault has been automatically locked for security",
@@ -125,6 +144,13 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
     }, timeoutMs);
 
     setLockTimer(newTimer);
+  };
+
+  const handleTimeoutChange = (minutes: number) => {
+    setLockTimeoutMinutes(minutes);
+    if (masterPassword) {
+      startLockTimer(); // Restart timer with new duration
+    }
   };
 
   const checkMasterPassword = async () => {
@@ -343,6 +369,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
       }
 
       if (error) {
+        console.error('Error saving password:', error);
         toast({
           title: "Error",
           description: "Failed to save password entry",
@@ -359,9 +386,10 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
       setFormData({ title: '', username: '', password: '', website: '', notes: '', group_id: '', expiration_days: '' });
       setEditingEntry(null);
       setShowForm(false);
-      fetchEntries();
+      await fetchEntries(); // Use await to prevent race conditions
       startLockTimer();
     } catch (error) {
+      console.error('Error encrypting password:', error);
       toast({
         title: "Error",
         description: "Failed to encrypt password",
@@ -528,6 +556,16 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
           <Card className="glass-card w-full max-w-md p-8 bg-white/5 backdrop-blur-xl border-white/20 text-center">
             <h2 className="text-2xl font-bold text-white mb-4">Password Vault Locked</h2>
             <p className="text-gray-400 mb-6">Enter your master password to access your vault</p>
+            
+            {/* Show timer settings before unlock */}
+            <div className="mb-6">
+              <TimerSettings
+                lockTimeoutMinutes={lockTimeoutMinutes}
+                onTimeoutChange={handleTimeoutChange}
+                onClose={() => {}}
+              />
+            </div>
+            
             <Button
               onClick={() => setShowMasterModal(true)}
               className="glass-button bg-green-600 hover:bg-green-700 text-white"
@@ -561,7 +599,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
       {showTimerSettings && (
         <TimerSettings
           lockTimeoutMinutes={lockTimeoutMinutes}
-          onTimeoutChange={setLockTimeoutMinutes}
+          onTimeoutChange={handleTimeoutChange}
           onClose={() => setShowTimerSettings(false)}
         />
       )}
