@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Copy, RefreshCw, Shield, CheckCircle2, AlertTriangle, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -23,10 +24,9 @@ interface PasswordOptions {
 
 interface PasswordGeneratorProps {
   onSavePassword?: (password: string) => void;
-  masterPassword?: string | null;
 }
 
-const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ masterPassword }) => {
+const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
   const [password, setPassword] = useState('');
   const [options, setOptions] = useState<PasswordOptions>({
     length: 12,

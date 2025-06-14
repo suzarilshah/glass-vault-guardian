@@ -17,7 +17,10 @@ const Index = () => {
 
   const handleNavigation = (view: 'generator' | 'vault') => {
     setCurrentView(view);
-    // Don't clear master password when switching views
+    // Clear master password only when leaving vault view
+    if (view === 'generator') {
+      setMasterPassword(null);
+    }
   };
 
   if (loading) {
@@ -48,7 +51,7 @@ const Index = () => {
               </h1>
               <p className="text-gray-400">Generate secure passwords and manage your vault</p>
             </div>
-            <PasswordGenerator masterPassword={masterPassword} />
+            <PasswordGenerator />
           </div>
         </div>
         
