@@ -5,19 +5,19 @@ import { useToast } from '@/hooks/use-toast';
 interface UseVaultTimerProps {
   masterPassword: string | null;
   setMasterPassword: (password: string | null) => void;
-  setVisiblePasswords: (passwords: Set<string>) => void;
   setShowForm: (show: boolean) => void;
   setEditingEntry: (entry: any) => void;
   onMasterPasswordSet?: (password: string | null) => void;
+  setVisiblePasswords?: (passwords: Set<string>) => void;
 }
 
 export const useVaultTimer = ({
   masterPassword,
   setMasterPassword,
-  setVisiblePasswords,
   setShowForm,
   setEditingEntry,
   onMasterPasswordSet,
+  setVisiblePasswords,
 }: UseVaultTimerProps) => {
   const [lockTimeoutMinutes, setLockTimeoutMinutes] = useState<number>(5);
   const [lockTimer, setLockTimer] = useState<NodeJS.Timeout | null>(null);
@@ -43,7 +43,9 @@ export const useVaultTimer = ({
     const newTimer = setTimeout(() => {
       clearInterval(newCountdownInterval);
       setMasterPassword(null);
-      setVisiblePasswords(new Set());
+      if (setVisiblePasswords) {
+        setVisiblePasswords(new Set());
+      }
       setShowForm(false);
       setEditingEntry(null);
       onMasterPasswordSet?.(null);
@@ -56,7 +58,9 @@ export const useVaultTimer = ({
     if (lockTimer) clearTimeout(lockTimer);
     if (countdownInterval) clearInterval(countdownInterval);
     setMasterPassword(null);
-    setVisiblePasswords(new Set());
+    if (setVisiblePasswords) {
+      setVisiblePasswords(new Set());
+    }
     setShowForm(false);
     setEditingEntry(null);
     onMasterPasswordSet?.(null);

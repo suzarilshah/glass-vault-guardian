@@ -71,7 +71,7 @@ const ApiVault: React.FC<ApiVaultProps> = ({
     onMasterPasswordSet,
   });
 
-  const handleMasterPasswordSubmit = async (password: string, isCreating: boolean) => {
+  const handleMasterPasswordSubmit = async (password: string) => {
     setMasterPassword(password);
     onMasterPasswordSet(password);
     setShowMasterModal(false);
@@ -92,33 +92,25 @@ const ApiVault: React.FC<ApiVaultProps> = ({
 
   if (!masterPassword) {
     return (
-      <>
-        <VaultLockedScreen 
-          onUnlock={() => setShowMasterModal(true)}
-          title="API Vault"
-          description="Your API keys and secrets are securely encrypted"
-        />
-        <MasterPasswordModal
-          isOpen={showMasterModal}
-          onClose={() => setShowMasterModal(false)}
-          onSubmit={handleMasterPasswordSubmit}
-          isCreating={false}
-        />
-      </>
+      <VaultLockedScreen 
+        showMasterModal={showMasterModal}
+        setShowMasterModal={setShowMasterModal}
+        handleMasterPasswordSubmit={handleMasterPasswordSubmit}
+        isCreatingMaster={false}
+        lockTimeoutMinutes={lockTimeoutMinutes}
+        handleTimeoutChange={handleTimeoutChange}
+      />
     );
   }
 
   return (
     <div className="space-y-6">
       <VaultHeader
-        title="API Vault"
-        subtitle="Securely store and manage your API keys"
         remainingTime={remainingTime}
         onAddNew={handleShowForm}
         onManageGroups={() => setShowGroupManager(true)}
         onTimerSettings={() => setShowTimerSettings(true)}
         onLock={manualLockVault}
-        addButtonText="Add API Key"
       />
 
       {expiredEntries.length > 0 && (
@@ -128,7 +120,10 @@ const ApiVault: React.FC<ApiVaultProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1">
           <GroupSidebar
-            groups={groupStats}
+            groups={groupStats.map(group => ({
+              ...group,
+              description: group.description || ''
+            }))}
             selectedGroup={selectedGroup}
             onGroupSelect={setSelectedGroup}
             ungroupedCount={ungroupedCount}
@@ -176,16 +171,17 @@ const ApiVault: React.FC<ApiVaultProps> = ({
       <GroupManager
         isOpen={showGroupManager}
         onClose={() => setShowGroupManager(false)}
-        onGroupsUpdated={fetchGroups}
+        onUpdate={fetchGroups}
         type="api"
       />
 
-      <TimerSettings
-        isOpen={showTimerSettings}
-        onClose={() => setShowTimerSettings(false)}
-        lockTimeoutMinutes={lockTimeoutMinutes}
-        onTimeoutChange={handleTimeoutChange}
-      />
+      {showTimerSettings && (
+        <TimerSettings
+          lockTimeoutMinutes={lockTimeoutMinutes}
+          onTimeoutChange={handleTimeoutChange}
+          onClose={() => setShowTimerSettings(false)}
+        />
+      )}
 
       <ConfirmationDialog
         isOpen={!!deleteConfirmEntry}
