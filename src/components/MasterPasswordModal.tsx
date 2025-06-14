@@ -107,13 +107,13 @@ const MasterPasswordModal: React.FC<MasterPasswordModalProps> = ({
               type="button"
               variant="outline"
               onClick={onClose}
-              className="flex-1 bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200 hover:text-blue-900 border font-semibold"
+              className="flex-1 bg-white/10 text-white border-white/20 hover:bg-white/20 hover:text-white border font-semibold"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white border border-blue-400 font-semibold"
+              className="flex-1 bg-green-600 hover:bg-green-700 text-black font-bold border border-green-500"
             >
               {isCreating ? 'Set Password' : 'Unlock Vault'}
             </Button>

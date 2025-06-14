@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Save, Copy, RefreshCw, Shield, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -224,55 +223,57 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-300">Password Strength</span>
-                  <span className={`text-sm font-medium ${
-                    strength <= 2 ? 'text-red-400' : 
-                    strength <= 3 ? 'text-yellow-400' : 
-                    strength <= 4 ? 'text-blue-400' : 'text-green-400'
-                  }`}>
-                    {getStrengthText(strength)}
-                  </span>
-                </div>
-                <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-                  <div 
-                    className={`h-full transition-all duration-300 ${getStrengthColor(strength)}`}
-                    style={{ width: `${(strength / 5) * 100}%` }}
-                  />
-                </div>
-              </div>
-
               {password && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {generatedPasswordBreach && (
-                    <div className="glass-option p-3 rounded-lg border border-white/10">
-                      <div className="flex items-center gap-2 mb-1">
-                        {generatedPasswordBreach.isBreached ? 
-                          <AlertTriangle className="w-4 h-4 text-red-400" /> : 
-                          <CheckCircle2 className="w-4 h-4 text-green-400" />
-                        }
-                        <span className="text-sm text-gray-300">Breach Status:</span>
-                      </div>
-                      <span className={`text-sm font-semibold ${
-                        generatedPasswordBreach.isBreached ? 'text-red-400' : 'text-green-400'
+                <>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-300">Password Strength</span>
+                      <span className={`text-sm font-medium ${
+                        strength <= 2 ? 'text-red-400' : 
+                        strength <= 3 ? 'text-yellow-400' : 
+                        strength <= 4 ? 'text-blue-400' : 'text-green-400'
                       }`}>
-                        {generatedPasswordBreach.isBreached ? 'Compromised' : 'Safe'}
+                        {getStrengthText(strength)}
                       </span>
                     </div>
-                  )}
+                    <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-300 ${getStrengthColor(strength)}`}
+                        style={{ width: `${(strength / 5) * 100}%` }}
+                      />
+                    </div>
+                  </div>
 
-                  {generatedPasswordCrackTime && (
-                    <div className="glass-option p-3 rounded-lg border border-white/10">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-300">Time to crack:</span>
-                        <span className="text-sm font-semibold text-green-400">
-                          {generatedPasswordCrackTime.humanReadable}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {generatedPasswordBreach && (
+                      <div className="glass-option p-3 rounded-lg border border-white/10">
+                        <div className="flex items-center gap-2 mb-1">
+                          {generatedPasswordBreach.isBreached ? 
+                            <AlertTriangle className="w-4 h-4 text-red-400" /> : 
+                            <CheckCircle2 className="w-4 h-4 text-green-400" />
+                          }
+                          <span className="text-sm text-gray-300">Breach Status:</span>
+                        </div>
+                        <span className={`text-sm font-semibold ${
+                          generatedPasswordBreach.isBreached ? 'text-red-400' : 'text-green-400'
+                        }`}>
+                          {generatedPasswordBreach.isBreached ? 'Compromised' : 'Safe'}
                         </span>
                       </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+
+                    {generatedPasswordCrackTime && (
+                      <div className="glass-option p-3 rounded-lg border border-white/10">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-300">Time to crack:</span>
+                          <span className="text-sm font-semibold text-green-400">
+                            {generatedPasswordCrackTime.humanReadable}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           </Card>
