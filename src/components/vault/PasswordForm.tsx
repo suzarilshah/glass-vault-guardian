@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,36 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Save, RefreshCw } from 'lucide-react';
-
-interface PasswordGroup {
-  id: string;
-  name: string;
-  description: string;
-}
-
-interface PasswordEntry {
-  id: string;
-  title: string;
-  username: string;
-  password_encrypted: string;
-  website: string;
-  notes: string;
-  group_id: string | null;
-  expires_at: string | null;
-  is_expired: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-interface FormData {
-  title: string;
-  username: string;
-  password: string;
-  website: string;
-  notes: string;
-  group_id: string;
-  expiration_days: string;
-}
+import { PasswordGroup, PasswordEntry, FormData } from '@/types/vault';
 
 interface PasswordFormProps {
   formData: FormData;

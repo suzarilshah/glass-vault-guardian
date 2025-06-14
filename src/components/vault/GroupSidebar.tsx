@@ -1,12 +1,6 @@
-
 import React from 'react';
 import { Card } from '@/components/ui/card';
-
-interface PasswordGroup {
-  id: string;
-  name: string;
-  description: string;
-}
+import { PasswordGroup } from '@/types/vault';
 
 interface GroupSidebarProps {
   groups: PasswordGroup[];

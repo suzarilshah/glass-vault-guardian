@@ -1,29 +1,9 @@
-
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Copy, Edit, Trash2, Eye, EyeOff, RefreshCw, Clock } from 'lucide-react';
 import { decryptPassword } from '@/utils/encryption';
-
-interface PasswordGroup {
-  id: string;
-  name: string;
-  description: string;
-}
-
-interface PasswordEntry {
-  id: string;
-  title: string;
-  username: string;
-  password_encrypted: string;
-  website: string;
-  notes: string;
-  group_id: string | null;
-  expires_at: string | null;
-  is_expired: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import { PasswordGroup, PasswordEntry } from '@/types/vault';
 
 interface PasswordEntryCardProps {
   entry: PasswordEntry;
