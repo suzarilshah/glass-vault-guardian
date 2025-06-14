@@ -148,13 +148,16 @@ const ProfilePage: React.FC = () => {
     // Upsert for user_id
     const { error } = await supabase
       .from('user_master_passwords')
-      .upsert([
-        {
-          user_id: user.id,
-          master_password_hash: hash,
-          updated_at: new Date().toISOString(),
-        },
-      ], { onConflict: ['user_id'] });
+      .upsert(
+        [
+          {
+            user_id: user.id,
+            master_password_hash: hash,
+            updated_at: new Date().toISOString(),
+          },
+        ],
+        { onConflict: 'user_id' } // <-- FIXED HERE
+      );
     setSaving(false);
     if (error) {
       toast({
