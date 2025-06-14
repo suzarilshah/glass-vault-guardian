@@ -1,15 +1,21 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Copy, Edit, Trash2, Eye, EyeOff, Download, Save } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Copy, Edit, Trash2, Eye, EyeOff, Download, Save, RefreshCw, Clock, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { encryptPassword, decryptPassword, hashMasterPassword } from '@/utils/encryption';
 import MasterPasswordModal from './MasterPasswordModal';
+
+interface PasswordGroup {
+  id: string;
+  name: string;
+  description: string;
+}
 
 interface PasswordEntry {
   id: string;
@@ -18,30 +24,42 @@ interface PasswordEntry {
   password_encrypted: string;
   website: string;
   notes: string;
+  group_id: string | null;
+  expires_at: string | null;
+  is_expired: boolean;
   created_at: string;
   updated_at: string;
 }
 
-const PasswordVault = () => {
+interface PasswordVaultProps {
+  masterPassword?: string | null;
+  onMasterPasswordSet?: (password: string) => void;
+}
+
+const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMasterPassword, onMasterPasswordSet }) => {
   const [entries, setEntries] = useState<PasswordEntry[]>([]);
-  const [masterPassword, setMasterPassword] = useState<string | null>(null);
+  const [groups, setGroups] = useState<PasswordGroup[]>([]);
+  const [masterPassword, setMasterPassword] = useState<string | null>(propMasterPassword || null);
   const [showMasterModal, setShowMasterModal] = useState(false);
   const [isCreatingMaster, setIsCreatingMaster] = useState(false);
   const [editingEntry, setEditingEntry] = useState<PasswordEntry | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [formData, setFormData] = useState({
     title: '',
     username: '',
     password: '',
     website: '',
-    notes: ''
+    notes: '',
+    group_id: '',
+    expiration_days: ''
   });
   const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
   const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user) {
+    if (user && !masterPassword) {
       checkMasterPassword();
     }
   }, [user]);
@@ -49,6 +67,7 @@ const PasswordVault = () => {
   useEffect(() => {
     if (masterPassword) {
       fetchEntries();
+      fetchGroups();
     }
   }, [masterPassword]);
 
@@ -95,6 +114,7 @@ const PasswordVault = () => {
       setMasterPassword(password);
       setShowMasterModal(false);
       setIsCreatingMaster(false);
+      onMasterPasswordSet?.(password);
       toast({
         title: "Success",
         description: "Master password set successfully"
@@ -118,6 +138,7 @@ const PasswordVault = () => {
       if (data.master_password_hash === hashedPassword) {
         setMasterPassword(password);
         setShowMasterModal(false);
+        onMasterPasswordSet?.(password);
         toast({
           title: "Success",
           description: "Vault unlocked"
@@ -129,6 +150,18 @@ const PasswordVault = () => {
           variant: "destructive"
         });
       }
+    }
+  };
+
+  const fetchGroups = async () => {
+    const { data, error } = await supabase
+      .from('password_groups')
+      .select('*')
+      .eq('user_id', user?.id)
+      .order('name');
+
+    if (!error && data) {
+      setGroups(data);
     }
   };
 
@@ -151,19 +184,93 @@ const PasswordVault = () => {
     setEntries(data || []);
   };
 
+  const generateNewPassword = (entryId: string) => {
+    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+    let newPassword = '';
+    for (let i = 0; i < 16; i++) {
+      newPassword += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    
+    // Update the form data if we're editing this entry
+    if (editingEntry?.id === entryId) {
+      setFormData(prev => ({ ...prev, password: newPassword }));
+    }
+    
+    return newPassword;
+  };
+
+  const regeneratePassword = async (entry: PasswordEntry) => {
+    if (!masterPassword) return;
+
+    try {
+      const newPassword = generateNewPassword(entry.id);
+      const encryptedPassword = encryptPassword(newPassword, masterPassword);
+      
+      let expiresAt = entry.expires_at;
+      if (entry.expires_at) {
+        // Reset expiration if the password had one
+        const expDate = new Date();
+        expDate.setDate(expDate.getDate() + 90); // Default to 90 days
+        expiresAt = expDate.toISOString();
+      }
+
+      const { error } = await supabase
+        .from('password_entries')
+        .update({
+          password_encrypted: encryptedPassword,
+          expires_at: expiresAt,
+          is_expired: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', entry.id);
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to regenerate password",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Password regenerated successfully"
+      });
+
+      fetchEntries();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to regenerate password",
+        variant: "destructive"
+      });
+    }
+  };
+
   const saveEntry = async () => {
     if (!masterPassword) return;
 
     try {
       const encryptedPassword = encryptPassword(formData.password, masterPassword);
       
+      let expiresAt = null;
+      if (formData.expiration_days && parseInt(formData.expiration_days) > 0) {
+        const expDate = new Date();
+        expDate.setDate(expDate.getDate() + parseInt(formData.expiration_days));
+        expiresAt = expDate.toISOString();
+      }
+
       const entryData = {
         user_id: user?.id,
         title: formData.title,
         username: formData.username,
         password_encrypted: encryptedPassword,
         website: formData.website,
-        notes: formData.notes
+        notes: formData.notes,
+        group_id: formData.group_id || null,
+        expires_at: expiresAt,
+        is_expired: false
       };
 
       let error;
@@ -192,7 +299,7 @@ const PasswordVault = () => {
         description: editingEntry ? "Password updated" : "Password saved"
       });
 
-      setFormData({ title: '', username: '', password: '', website: '', notes: '' });
+      setFormData({ title: '', username: '', password: '', website: '', notes: '', group_id: '', expiration_days: '' });
       setEditingEntry(null);
       setShowForm(false);
       fetchEntries();
@@ -210,12 +317,27 @@ const PasswordVault = () => {
 
     try {
       const decryptedPassword = decryptPassword(entry.password_encrypted, masterPassword);
+      
+      // Calculate days until expiration
+      let expirationDays = '';
+      if (entry.expires_at) {
+        const expDate = new Date(entry.expires_at);
+        const today = new Date();
+        const diffTime = expDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays > 0) {
+          expirationDays = diffDays.toString();
+        }
+      }
+
       setFormData({
         title: entry.title,
         username: entry.username,
         password: decryptedPassword,
         website: entry.website,
-        notes: entry.notes
+        notes: entry.notes,
+        group_id: entry.group_id || '',
+        expiration_days: expirationDays
       });
       setEditingEntry(entry);
       setShowForm(true);
@@ -288,13 +410,16 @@ const PasswordVault = () => {
         username: entry.username,
         password: decryptPassword(entry.password_encrypted, masterPassword),
         website: entry.website,
-        notes: entry.notes
+        notes: entry.notes,
+        group: groups.find(g => g.id === entry.group_id)?.name || '',
+        expires_at: entry.expires_at || '',
+        is_expired: entry.is_expired
       }));
 
       const csvContent = [
-        'Title,Username,Password,Website,Notes',
+        'Title,Username,Password,Website,Notes,Group,Expires At,Is Expired',
         ...decryptedEntries.map(entry => 
-          `"${entry.title}","${entry.username}","${entry.password}","${entry.website}","${entry.notes}"`
+          `"${entry.title}","${entry.username}","${entry.password}","${entry.website}","${entry.notes}","${entry.group}","${entry.expires_at}","${entry.is_expired}"`
         )
       ].join('\n');
 
@@ -318,6 +443,12 @@ const PasswordVault = () => {
       });
     }
   };
+
+  const filteredEntries = selectedGroup === 'all' 
+    ? entries 
+    : entries.filter(entry => entry.group_id === selectedGroup);
+
+  const expiredEntries = entries.filter(entry => entry.is_expired);
 
   if (!masterPassword) {
     return (
@@ -367,6 +498,36 @@ const PasswordVault = () => {
         </div>
       </div>
 
+      {expiredEntries.length > 0 && (
+        <Card className="glass-card p-4 bg-red-900/20 backdrop-blur-xl border-red-500/30">
+          <div className="flex items-center gap-2 text-red-400">
+            <AlertTriangle className="w-5 h-5" />
+            <span className="font-medium">
+              {expiredEntries.length} password{expiredEntries.length !== 1 ? 's have' : ' has'} expired
+            </span>
+          </div>
+        </Card>
+      )}
+
+      <div className="flex gap-4 items-center">
+        <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+          <SelectTrigger className="w-48 glass-input bg-white/5 border-white/20 text-white">
+            <SelectValue placeholder="Filter by group" />
+          </SelectTrigger>
+          <SelectContent className="glass-card bg-white/10 backdrop-blur-xl border-white/20">
+            <SelectItem value="all" className="text-white">All Groups</SelectItem>
+            {groups.map((group) => (
+              <SelectItem key={group.id} value={group.id} className="text-white">
+                {group.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <span className="text-gray-400 text-sm">
+          {filteredEntries.length} password{filteredEntries.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+
       {showForm && (
         <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
           <h3 className="text-lg font-semibold text-white mb-4">
@@ -385,18 +546,52 @@ const PasswordVault = () => {
               onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
               className="glass-input bg-white/5 border-white/20 text-white"
             />
-            <Input
-              placeholder="Password"
-              type="password"
-              value={formData.password}
-              onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-              className="glass-input bg-white/5 border-white/20 text-white"
-            />
+            <div className="relative">
+              <Input
+                placeholder="Password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                className="glass-input bg-white/5 border-white/20 text-white pr-10"
+              />
+              <Button
+                type="button"
+                onClick={() => {
+                  const newPassword = generateNewPassword('');
+                  setFormData(prev => ({ ...prev, password: newPassword }));
+                }}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 h-6 w-6 text-green-400 hover:text-green-300"
+                variant="ghost"
+                size="sm"
+              >
+                <RefreshCw className="w-3 h-3" />
+              </Button>
+            </div>
             <Input
               placeholder="Website"
               value={formData.website}
               onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
               className="glass-input bg-white/5 border-white/20 text-white"
+            />
+            <Select value={formData.group_id} onValueChange={(value) => setFormData(prev => ({ ...prev, group_id: value }))}>
+              <SelectTrigger className="glass-input bg-white/5 border-white/20 text-white">
+                <SelectValue placeholder="Select group (optional)" />
+              </SelectTrigger>
+              <SelectContent className="glass-card bg-white/10 backdrop-blur-xl border-white/20">
+                {groups.map((group) => (
+                  <SelectItem key={group.id} value={group.id} className="text-white">
+                    {group.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder="Expiration (days)"
+              type="number"
+              value={formData.expiration_days}
+              onChange={(e) => setFormData(prev => ({ ...prev, expiration_days: e.target.value }))}
+              className="glass-input bg-white/5 border-white/20 text-white"
+              min="1"
             />
           </div>
           <Textarea
@@ -410,7 +605,7 @@ const PasswordVault = () => {
               onClick={() => {
                 setShowForm(false);
                 setEditingEntry(null);
-                setFormData({ title: '', username: '', password: '', website: '', notes: '' });
+                setFormData({ title: '', username: '', password: '', website: '', notes: '', group_id: '', expiration_days: '' });
               }}
               variant="outline"
               className="border-white/20 text-white hover:bg-white/10"
@@ -429,80 +624,130 @@ const PasswordVault = () => {
       )}
 
       <div className="grid gap-4">
-        {entries.map((entry) => (
-          <Card key={entry.id} className="glass-card p-4 bg-white/5 backdrop-blur-xl border-white/20">
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-white">{entry.title}</h3>
-                <p className="text-gray-400">{entry.username}</p>
-                {entry.website && (
-                  <p className="text-green-400 text-sm">{entry.website}</p>
-                )}
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-gray-300 text-sm">Password:</span>
-                  <span className="text-white font-mono">
-                    {visiblePasswords.has(entry.id) 
-                      ? (() => {
-                          try {
-                            return decryptPassword(entry.password_encrypted, masterPassword!);
-                          } catch {
-                            return '••••••••';
-                          }
-                        })()
-                      : '••••••••'
-                    }
-                  </span>
+        {filteredEntries.map((entry) => {
+          const groupName = groups.find(g => g.id === entry.group_id)?.name;
+          const isExpired = entry.is_expired;
+          const isExpiringSoon = entry.expires_at && !isExpired && 
+            new Date(entry.expires_at).getTime() - new Date().getTime() < 7 * 24 * 60 * 60 * 1000; // 7 days
+
+          return (
+            <Card key={entry.id} className={`glass-card p-4 bg-white/5 backdrop-blur-xl border-white/20 ${
+              isExpired ? 'border-red-500/50 bg-red-900/10' : 
+              isExpiringSoon ? 'border-yellow-500/50 bg-yellow-900/10' : ''
+            }`}>
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-white">{entry.title}</h3>
+                    {groupName && (
+                      <span className="text-xs bg-blue-600/20 text-blue-400 px-2 py-1 rounded">
+                        {groupName}
+                      </span>
+                    )}
+                    {isExpired && (
+                      <span className="text-xs bg-red-600/20 text-red-400 px-2 py-1 rounded flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        Expired
+                      </span>
+                    )}
+                    {isExpiringSoon && (
+                      <span className="text-xs bg-yellow-600/20 text-yellow-400 px-2 py-1 rounded flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        Expires Soon
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-gray-400">{entry.username}</p>
+                  {entry.website && (
+                    <p className="text-green-400 text-sm">{entry.website}</p>
+                  )}
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-gray-300 text-sm">Password:</span>
+                    <span className="text-white font-mono">
+                      {visiblePasswords.has(entry.id) 
+                        ? (() => {
+                            try {
+                              return decryptPassword(entry.password_encrypted, masterPassword!);
+                            } catch {
+                              return '••••••••';
+                            }
+                          })()
+                        : '••••••••'
+                      }
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => togglePasswordVisibility(entry.id)}
+                      className="text-gray-400 hover:text-white p-1 h-6 w-6"
+                    >
+                      {visiblePasswords.has(entry.id) ? 
+                        <EyeOff className="w-3 h-3" /> : 
+                        <Eye className="w-3 h-3" />
+                      }
+                    </Button>
+                  </div>
+                  {entry.expires_at && (
+                    <p className="text-gray-400 text-sm mt-1">
+                      Expires: {new Date(entry.expires_at).toLocaleDateString()}
+                    </p>
+                  )}
+                  {entry.notes && (
+                    <p className="text-gray-400 text-sm mt-2">{entry.notes}</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {(isExpired || isExpiringSoon) && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => regeneratePassword(entry)}
+                      className="text-orange-400 hover:text-orange-300 p-2"
+                      title="Regenerate password"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => togglePasswordVisibility(entry.id)}
-                    className="text-gray-400 hover:text-white p-1 h-6 w-6"
+                    onClick={() => copyPassword(entry)}
+                    className="text-green-400 hover:text-green-300 p-2"
                   >
-                    {visiblePasswords.has(entry.id) ? 
-                      <EyeOff className="w-3 h-3" /> : 
-                      <Eye className="w-3 h-3" />
-                    }
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => editEntry(entry)}
+                    className="text-blue-400 hover:text-blue-300 p-2"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => deleteEntry(entry.id)}
+                    className="text-red-400 hover:text-red-300 p-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
-                {entry.notes && (
-                  <p className="text-gray-400 text-sm mt-2">{entry.notes}</p>
-                )}
               </div>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => copyPassword(entry)}
-                  className="text-green-400 hover:text-green-300 p-2"
-                >
-                  <Copy className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => editEntry(entry)}
-                  className="text-blue-400 hover:text-blue-300 p-2"
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => deleteEntry(entry.id)}
-                  className="text-red-400 hover:text-red-300 p-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
       </div>
 
-      {entries.length === 0 && (
+      {filteredEntries.length === 0 && (
         <Card className="glass-card p-8 text-center bg-white/5 backdrop-blur-xl border-white/20">
-          <h3 className="text-lg font-semibold text-white mb-2">No passwords saved yet</h3>
-          <p className="text-gray-400 mb-4">Start building your secure password vault</p>
+          <h3 className="text-lg font-semibold text-white mb-2">No passwords found</h3>
+          <p className="text-gray-400 mb-4">
+            {selectedGroup === 'all' 
+              ? 'Start building your secure password vault' 
+              : 'No passwords in this group'
+            }
+          </p>
           <Button
             onClick={() => setShowForm(true)}
             className="glass-button bg-green-600 hover:bg-green-700 text-white"

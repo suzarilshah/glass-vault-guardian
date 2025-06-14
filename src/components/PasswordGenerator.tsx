@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Copy, RefreshCw, Shield, CheckCircle2, AlertTriangle, Save } from 'lucide-react';
+import { Copy, RefreshCw, Shield, CheckCircle2, AlertTriangle, Save, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
@@ -11,6 +12,8 @@ import { checkPasswordBreach } from '@/utils/breachChecker';
 import { useAuth } from '@/contexts/AuthContext';
 import KeywordObfuscator from './KeywordObfuscator';
 import PasswordAnalyzer from './PasswordAnalyzer';
+import SavePasswordModal from './SavePasswordModal';
+import GroupManager from './GroupManager';
 
 interface PasswordOptions {
   length: number;
@@ -22,9 +25,10 @@ interface PasswordOptions {
 
 interface PasswordGeneratorProps {
   onSavePassword?: (password: string) => void;
+  masterPassword?: string | null;
 }
 
-const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ onSavePassword }) => {
+const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ masterPassword }) => {
   const [password, setPassword] = useState('');
   const [options, setOptions] = useState<PasswordOptions>({
     length: 12,
@@ -34,6 +38,8 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ onSavePassword })
     includeSpecialChars: true,
   });
   const [strength, setStrength] = useState(0);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showGroupManager, setShowGroupManager] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -70,18 +76,15 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ onSavePassword })
     let score = 0;
     const length = pwd.length;
     
-    // Length scoring - more realistic approach
     if (length >= 8) score += 1;
     if (length >= 12) score += 1;
     if (length >= 16) score += 1;
     
-    // Character variety scoring
     if (/[a-z]/.test(pwd)) score += 1;
     if (/[A-Z]/.test(pwd)) score += 1;
     if (/[0-9]/.test(pwd)) score += 1;
     if (/[^A-Za-z0-9]/.test(pwd)) score += 1;
     
-    // Bonus for very long passwords
     if (length >= 20) score += 1;
     
     return Math.min(score, 5);
@@ -92,15 +95,9 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ onSavePassword })
     
     try {
       await navigator.clipboard.writeText(password);
-      
-      // Auto-save generated password if user is logged in
-      if (user && onSavePassword) {
-        onSavePassword(password);
-      }
-      
       toast({
         title: "Copied!",
-        description: user ? "Password copied and saved to vault" : "Password copied to clipboard",
+        description: "Password copied to clipboard",
       });
     } catch (err) {
       toast({
@@ -109,6 +106,37 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ onSavePassword })
         variant: "destructive"
       });
     }
+  };
+
+  const handleSavePassword = () => {
+    if (!password) {
+      toast({
+        title: "Error",
+        description: "No password to save",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "Please sign in to save passwords",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!masterPassword) {
+      toast({
+        title: "Error",
+        description: "Master password required. Please unlock your vault first.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setShowSaveModal(true);
   };
 
   const getStrengthColor = (strength: number) => {
@@ -144,7 +172,6 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ onSavePassword })
 
   return (
     <div className="space-y-6">
-      {/* Tabs */}
       <Tabs defaultValue="generator" className="w-full">
         <TabsList className="grid w-full grid-cols-2 glass-card bg-white/5 backdrop-blur-xl border-white/20">
           <TabsTrigger 
@@ -162,7 +189,6 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ onSavePassword })
         </TabsList>
 
         <TabsContent value="generator" className="space-y-6 mt-6">
-          {/* Main Password Card */}
           <Card className="glass-card mb-6 p-6 border-0 bg-white/5 backdrop-blur-xl">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -170,15 +196,28 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ onSavePassword })
                   <Shield className="w-5 h-5 text-green-400" />
                   Generated Password
                 </h2>
-                <Button
-                  onClick={generatePassword}
-                  variant="outline"
-                  size="sm"
-                  className="glass-button border-white/20 text-white hover:bg-white/10"
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Regenerate
-                </Button>
+                <div className="flex gap-2">
+                  {user && (
+                    <Button
+                      onClick={() => setShowGroupManager(true)}
+                      variant="outline"
+                      size="sm"
+                      className="glass-button border-white/20 text-white hover:bg-white/10"
+                    >
+                      <Users className="w-4 h-4 mr-2" />
+                      Groups
+                    </Button>
+                  )}
+                  <Button
+                    onClick={generatePassword}
+                    variant="outline"
+                    size="sm"
+                    className="glass-button border-white/20 text-white hover:bg-white/10"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Regenerate
+                  </Button>
+                </div>
               </div>
               
               <div className="relative">
@@ -188,7 +227,7 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ onSavePassword })
                 <div className="absolute right-2 top-2 flex gap-2">
                   {user && password && (
                     <Button
-                      onClick={() => onSavePassword?.(password)}
+                      onClick={handleSavePassword}
                       variant="ghost"
                       size="sm"
                       className="text-blue-400 hover:text-blue-300 hover:bg-white/10"
@@ -228,10 +267,8 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ onSavePassword })
                 </div>
               </div>
 
-              {/* Breach Status and Crack Time Display */}
               {password && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Breach Status */}
                   {generatedPasswordBreach && (
                     <div className="glass-option p-3 rounded-lg border border-white/10">
                       <div className="flex items-center gap-2 mb-1">
@@ -249,7 +286,6 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ onSavePassword })
                     </div>
                   )}
 
-                  {/* Crack Time */}
                   {generatedPasswordCrackTime && (
                     <div className="glass-option p-3 rounded-lg border border-white/10">
                       <div className="flex items-center justify-between">
@@ -266,12 +302,10 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ onSavePassword })
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Options Card */}
             <Card className="glass-card p-6 border-0 bg-white/5 backdrop-blur-xl">
               <h3 className="text-lg font-semibold text-white mb-4">Customization Options</h3>
               
               <div className="space-y-6">
-                {/* Length Slider */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium text-gray-300">Password Length</label>
@@ -287,7 +321,6 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ onSavePassword })
                   />
                 </div>
 
-                {/* Character Type Options */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
                     <label className="text-sm text-gray-300">Uppercase (A-Z)</label>
@@ -324,7 +357,6 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ onSavePassword })
               </div>
             </Card>
 
-            {/* Keyword Obfuscator */}
             <KeywordObfuscator onPasswordGenerated={handleKeywordPasswordGenerated} />
           </div>
         </TabsContent>
@@ -333,6 +365,18 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({ onSavePassword })
           <PasswordAnalyzer />
         </TabsContent>
       </Tabs>
+
+      <SavePasswordModal
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        password={password}
+        masterPassword={masterPassword}
+      />
+
+      <GroupManager
+        isOpen={showGroupManager}
+        onClose={() => setShowGroupManager(false)}
+      />
     </div>
   );
 };

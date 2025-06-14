@@ -12,7 +12,10 @@ export type Database = {
       password_entries: {
         Row: {
           created_at: string
+          expires_at: string | null
+          group_id: string | null
           id: string
+          is_expired: boolean | null
           notes: string | null
           password_encrypted: string
           title: string
@@ -23,7 +26,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          expires_at?: string | null
+          group_id?: string | null
           id?: string
+          is_expired?: boolean | null
           notes?: string | null
           password_encrypted: string
           title: string
@@ -34,7 +40,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          expires_at?: string | null
+          group_id?: string | null
           id?: string
+          is_expired?: boolean | null
           notes?: string | null
           password_encrypted?: string
           title?: string
@@ -42,6 +51,41 @@ export type Database = {
           user_id?: string
           username?: string | null
           website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "password_entries_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "password_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      password_groups: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
