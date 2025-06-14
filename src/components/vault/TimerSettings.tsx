@@ -41,7 +41,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({
             onClick={onClose}
             size="sm"
             variant="outline"
-            className="border-white/20 text-white hover:bg-white/10"
+            className="bg-green-600 hover:bg-green-700 text-black border-green-500 hover:border-green-400 font-semibold"
           >
             Done
           </Button>

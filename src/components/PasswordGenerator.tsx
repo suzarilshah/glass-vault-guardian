@@ -188,7 +188,7 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
                     onClick={generatePassword}
                     variant="outline"
                     size="sm"
-                    className="glass-button text-white border-white/20 hover:bg-white/20 hover:text-green-400 border font-semibold"
+                    className="bg-green-600 hover:bg-green-700 text-black border-green-500 hover:border-green-400 font-semibold"
                   >
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Regenerate
