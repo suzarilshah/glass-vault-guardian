@@ -19,7 +19,7 @@ const Index = () => {
 
   const handleNavigation = (view: 'generator' | 'vault' | 'api-vault') => {
     setCurrentView(view);
-    // Clear master password only when leaving vault views
+    // Only clear master password when going to generator
     if (view === 'generator') {
       setMasterPassword(null);
     }
@@ -47,7 +47,7 @@ const Index = () => {
             currentView={currentView}
           />
           
-          <div style={{ display: currentView === 'generator' ? 'block' : 'none' }}>
+          {currentView === 'generator' && (
             <div className="space-y-6">
               <div className="text-center mb-8">
                 <h1 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-white to-green-400 bg-clip-text text-transparent">
@@ -57,21 +57,21 @@ const Index = () => {
               </div>
               <PasswordGenerator />
             </div>
-          </div>
+          )}
           
-          <div style={{ display: currentView === 'vault' ? 'block' : 'none' }}>
+          {currentView === 'vault' && (
             <PasswordVault 
               masterPassword={masterPassword} 
               onMasterPasswordSet={handleMasterPasswordSet}
             />
-          </div>
+          )}
 
-          <div style={{ display: currentView === 'api-vault' ? 'block' : 'none' }}>
+          {currentView === 'api-vault' && (
             <ApiVault 
               masterPassword={masterPassword} 
               onMasterPasswordSet={handleMasterPasswordSet}
             />
-          </div>
+          )}
         </div>
       </div>
       <Footer />

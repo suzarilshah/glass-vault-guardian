@@ -163,12 +163,12 @@ const ApiForm: React.FC<ApiFormProps> = ({
 
             <div className="space-y-2">
               <Label htmlFor="group" className="text-gray-300">Group</Label>
-              <Select value={formData.group_id} onValueChange={(value) => setFormData({ ...formData, group_id: value })}>
+              <Select value={formData.group_id || "none"} onValueChange={(value) => setFormData({ ...formData, group_id: value === "none" ? "" : value })}>
                 <SelectTrigger className="bg-white/10 border-white/20 text-white">
                   <SelectValue placeholder="Select group" />
                 </SelectTrigger>
                 <SelectContent className="glass-card bg-white/10 backdrop-blur-xl border-white/20">
-                  <SelectItem value="">No Group</SelectItem>
+                  <SelectItem value="none">No Group</SelectItem>
                   {groups.map((group) => (
                     <SelectItem key={group.id} value={group.id}>
                       {group.name}
