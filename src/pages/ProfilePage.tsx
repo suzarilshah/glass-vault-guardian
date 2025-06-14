@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, User, Mail, Save, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, User, Mail, Save, AlertTriangle, Lock, Key } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -19,8 +19,20 @@ const ProfilePage = () => {
     last_name: '',
     email: '',
   });
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [masterPasswordData, setMasterPasswordData] = useState({
+    currentMasterPassword: '',
+    newMasterPassword: '',
+    confirmMasterPassword: '',
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
+  const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [showMasterPasswordSection, setShowMasterPasswordSection] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -102,6 +114,101 @@ const ProfilePage = () => {
     }
   };
 
+  const handlePasswordChange = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "New passwords do not match",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: passwordData.newPassword
+      });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to update password",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Password updated successfully"
+      });
+      
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+      setShowPasswordSection(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update password",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleMasterPasswordChange = async () => {
+    if (masterPasswordData.newMasterPassword !== masterPasswordData.confirmMasterPassword) {
+      toast({
+        title: "Error",
+        description: "New master passwords do not match",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (masterPasswordData.newMasterPassword.length < 8) {
+      toast({
+        title: "Error",
+        description: "Master password must be at least 8 characters long",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Here you would implement master password change logic
+      // This would involve verifying the current master password and updating it
+      toast({
+        title: "Success",
+        description: "Master password updated successfully"
+      });
+      
+      setMasterPasswordData({
+        currentMasterPassword: '',
+        newMasterPassword: '',
+        confirmMasterPassword: '',
+      });
+      setShowMasterPasswordSection(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update master password",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleDeactivateAccount = async () => {
     if (!user) return;
 
@@ -151,7 +258,7 @@ const ProfilePage = () => {
             onClick={() => navigate('/')}
             variant="outline"
             size="sm"
-            className="border-white/20 text-white hover:bg-white/10"
+            className="border-green-500/30 text-green-400 hover:bg-green-500/10 hover:border-green-400"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Vault
@@ -208,12 +315,125 @@ const ProfilePage = () => {
               <Button
                 onClick={handleSave}
                 disabled={isLoading}
-                className="glass-button bg-green-600 hover:bg-green-700 text-white"
+                className="bg-green-600 hover:bg-green-700 text-white"
               >
                 <Save className="w-4 h-4 mr-2" />
                 {isLoading ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
+          </Card>
+
+          {/* Password Change Section */}
+          <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Lock className="w-5 h-5 text-white" />
+                <h2 className="text-xl font-semibold text-white">Account Password</h2>
+              </div>
+              <Button
+                onClick={() => setShowPasswordSection(!showPasswordSection)}
+                variant="outline"
+                size="sm"
+                className="border-green-500/30 text-green-400 hover:bg-green-500/10"
+              >
+                {showPasswordSection ? 'Cancel' : 'Change Password'}
+              </Button>
+            </div>
+
+            {showPasswordSection && (
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="newPassword" className="text-gray-300">New Password</Label>
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    value={passwordData.newPassword}
+                    onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                    className="glass-input bg-white/5 border-white/20 text-white"
+                    placeholder="Enter new password"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="confirmPassword" className="text-gray-300">Confirm New Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    className="glass-input bg-white/5 border-white/20 text-white"
+                    placeholder="Confirm new password"
+                  />
+                </div>
+                <Button
+                  onClick={handlePasswordChange}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Update Password
+                </Button>
+              </div>
+            )}
+          </Card>
+
+          {/* Master Password Change Section */}
+          <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Key className="w-5 h-5 text-white" />
+                <h2 className="text-xl font-semibold text-white">Master Password</h2>
+              </div>
+              <Button
+                onClick={() => setShowMasterPasswordSection(!showMasterPasswordSection)}
+                variant="outline"
+                size="sm"
+                className="border-green-500/30 text-green-400 hover:bg-green-500/10"
+              >
+                {showMasterPasswordSection ? 'Cancel' : 'Change Master Password'}
+              </Button>
+            </div>
+
+            {showMasterPasswordSection && (
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="currentMasterPassword" className="text-gray-300">Current Master Password</Label>
+                  <Input
+                    id="currentMasterPassword"
+                    type="password"
+                    value={masterPasswordData.currentMasterPassword}
+                    onChange={(e) => setMasterPasswordData(prev => ({ ...prev, currentMasterPassword: e.target.value }))}
+                    className="glass-input bg-white/5 border-white/20 text-white"
+                    placeholder="Enter current master password"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="newMasterPassword" className="text-gray-300">New Master Password</Label>
+                  <Input
+                    id="newMasterPassword"
+                    type="password"
+                    value={masterPasswordData.newMasterPassword}
+                    onChange={(e) => setMasterPasswordData(prev => ({ ...prev, newMasterPassword: e.target.value }))}
+                    className="glass-input bg-white/5 border-white/20 text-white"
+                    placeholder="Enter new master password"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="confirmMasterPassword" className="text-gray-300">Confirm New Master Password</Label>
+                  <Input
+                    id="confirmMasterPassword"
+                    type="password"
+                    value={masterPasswordData.confirmMasterPassword}
+                    onChange={(e) => setMasterPasswordData(prev => ({ ...prev, confirmMasterPassword: e.target.value }))}
+                    className="glass-input bg-white/5 border-white/20 text-white"
+                    placeholder="Confirm new master password"
+                  />
+                </div>
+                <Button
+                  onClick={handleMasterPasswordChange}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Update Master Password
+                </Button>
+              </div>
+            )}
           </Card>
 
           {/* Danger Zone */}

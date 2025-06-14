@@ -40,7 +40,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
             <Button
               onClick={onClose}
               variant="outline"
-              className="border-white/20 text-white hover:bg-white/10"
+              className="border-green-500/30 text-green-400 hover:bg-green-500/10 hover:border-green-400"
             >
               Cancel
             </Button>
@@ -52,7 +52,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
               className={`${
                 isDangerous 
                   ? 'bg-red-600 hover:bg-red-700 text-white' 
-                  : 'glass-button bg-blue-600 hover:bg-blue-700 text-white'
+                  : 'bg-green-600 hover:bg-green-700 text-white'
               }`}
             >
               {confirmText}

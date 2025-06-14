@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { History, Eye, EyeOff, Clock } from 'lucide-react';
+import { History, Eye, EyeOff, Clock, ArrowUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { decryptPassword } from '@/utils/encryption';
+import { useToast } from '@/hooks/use-toast';
 
 interface PasswordHistoryEntry {
   id: string;
@@ -18,18 +19,21 @@ interface PasswordHistoryProps {
   onClose: () => void;
   entryId: string;
   masterPassword: string;
+  onPasswordSelected?: (password: string) => void;
 }
 
 const PasswordHistory: React.FC<PasswordHistoryProps> = ({
   isOpen,
   onClose,
   entryId,
-  masterPassword
+  masterPassword,
+  onPasswordSelected
 }) => {
   const [history, setHistory] = useState<PasswordHistoryEntry[]>([]);
   const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen && entryId) {
@@ -72,6 +76,24 @@ const PasswordHistory: React.FC<PasswordHistoryProps> = ({
     setVisiblePasswords(newVisible);
   };
 
+  const handleUsePassword = (passwordEncrypted: string) => {
+    try {
+      const decryptedPassword = decryptPassword(passwordEncrypted, masterPassword);
+      onPasswordSelected?.(decryptedPassword);
+      toast({
+        title: "Password Selected",
+        description: "The historical password has been set as the current password.",
+      });
+      onClose();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to decrypt historical password.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="glass-card bg-white/5 backdrop-blur-xl border-white/20 text-white max-w-2xl">
@@ -97,11 +119,19 @@ const PasswordHistory: React.FC<PasswordHistoryProps> = ({
                       {new Date(entry.changed_at).toLocaleString()}
                     </span>
                   </div>
+                  <Button
+                    size="sm"
+                    onClick={() => handleUsePassword(entry.password_encrypted)}
+                    className="bg-green-600 hover:bg-green-700 text-white text-xs h-6 px-2"
+                  >
+                    <ArrowUp className="w-3 h-3 mr-1" />
+                    Use This Password
+                  </Button>
                 </div>
                 
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-gray-300 text-sm">Password:</span>
-                  <span className="text-white font-mono">
+                  <span className="text-white font-mono flex-1">
                     {visiblePasswords.has(entry.id) 
                       ? (() => {
                           try {
