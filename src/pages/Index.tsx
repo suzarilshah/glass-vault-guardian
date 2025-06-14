@@ -5,6 +5,7 @@ import PasswordGenerator from '@/components/PasswordGenerator';
 import PasswordVault from '@/components/PasswordVault';
 import AuthPage from '@/components/AuthPage';
 import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -36,32 +37,35 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-6">
-      <div className="max-w-6xl mx-auto">
-        <Navbar 
-          onShowVault={() => handleNavigation('vault')} 
-          currentView={currentView}
-        />
-        
-        <div style={{ display: currentView === 'generator' ? 'block' : 'none' }}>
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-white to-green-400 bg-clip-text text-transparent">
-                Password Security Suite
-              </h1>
-              <p className="text-gray-400">Generate secure passwords and manage your vault</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex flex-col">
+      <div className="flex-1 p-6">
+        <div className="max-w-6xl mx-auto">
+          <Navbar 
+            onShowVault={() => handleNavigation('vault')} 
+            currentView={currentView}
+          />
+          
+          <div style={{ display: currentView === 'generator' ? 'block' : 'none' }}>
+            <div className="space-y-6">
+              <div className="text-center mb-8">
+                <h1 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-white to-green-400 bg-clip-text text-transparent">
+                  Password Security Suite
+                </h1>
+                <p className="text-gray-400">Generate secure passwords and manage your vault</p>
+              </div>
+              <PasswordGenerator />
             </div>
-            <PasswordGenerator />
+          </div>
+          
+          <div style={{ display: currentView === 'vault' ? 'block' : 'none' }}>
+            <PasswordVault 
+              masterPassword={masterPassword} 
+              onMasterPasswordSet={handleMasterPasswordSet}
+            />
           </div>
         </div>
-        
-        <div style={{ display: currentView === 'vault' ? 'block' : 'none' }}>
-          <PasswordVault 
-            masterPassword={masterPassword} 
-            onMasterPasswordSet={handleMasterPasswordSet}
-          />
-        </div>
       </div>
+      <Footer />
     </div>
   );
 };

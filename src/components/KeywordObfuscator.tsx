@@ -112,7 +112,7 @@ const KeywordObfuscator = ({ onPasswordGenerated }: KeywordObfuscatorProps) => {
 
           <Button
             onClick={handleObfuscate}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white border border-blue-400 font-semibold"
+            className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white border-none font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
             variant="outline"
           >
             <Wand2 className="w-4 h-4 mr-2" />
@@ -129,7 +129,7 @@ const KeywordObfuscator = ({ onPasswordGenerated }: KeywordObfuscatorProps) => {
                   onClick={copyToClipboard}
                   variant="ghost"
                   size="sm"
-                  className="absolute right-2 top-2 text-green-400 hover:text-green-300 hover:bg-white/10"
+                  className="absolute right-2 top-2 glass-button text-white hover:text-green-400 hover:bg-white/20"
                 >
                   <Copy className="w-4 h-4" />
                 </Button>

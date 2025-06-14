@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Copy, RefreshCw, Shield, CheckCircle2, AlertTriangle, Save } from 'lucide-react';
+import { Copy, RefreshCw, Shield, CheckCircle2, AlertTriangle, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
@@ -189,7 +188,7 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
                     onClick={generatePassword}
                     variant="outline"
                     size="sm"
-                    className="bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200 hover:text-blue-900 border font-semibold"
+                    className="glass-button text-white border-white/20 hover:bg-white/20 hover:text-green-400 border font-semibold"
                   >
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Regenerate
@@ -207,16 +206,16 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
                       onClick={handleSavePassword}
                       variant="ghost"
                       size="sm"
-                      className="bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200 hover:text-blue-900 border font-semibold"
+                      className="glass-button text-white hover:text-green-400 hover:bg-white/20"
                     >
-                      <Save className="w-4 h-4" />
+                      <Download className="w-4 h-4" />
                     </Button>
                   )}
                   <Button
                     onClick={copyToClipboard}
                     variant="ghost"
                     size="sm"
-                    className="bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200 hover:text-blue-900 border font-semibold"
+                    className="glass-button text-white hover:text-green-400 hover:bg-white/20"
                     disabled={!password}
                   >
                     <Copy className="w-4 h-4" />
@@ -224,7 +223,6 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
                 </div>
               </div>
 
-              {/* Strength Indicator */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-300">Password Strength</span>
@@ -324,40 +322,4 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
                   </div>
                   
                   <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
-                    <label className="text-sm text-gray-300">Numbers (0-9)</label>
-                    <Switch
-                      checked={options.includeNumbers}
-                      onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeNumbers: checked }))}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between glass-option p-3 rounded-lg border border-white/10">
-                    <label className="text-sm text-gray-300">Special Characters (!@#$)</label>
-                    <Switch
-                      checked={options.includeSpecialChars}
-                      onCheckedChange={(checked) => setOptions(prev => ({ ...prev, includeSpecialChars: checked }))}
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            <KeywordObfuscator onPasswordGenerated={handleKeywordPasswordGenerated} />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="analyzer" className="space-y-6 mt-6">
-          <PasswordAnalyzer />
-        </TabsContent>
-      </Tabs>
-
-      <SavePasswordModal
-        isOpen={showSaveModal}
-        onClose={() => setShowSaveModal(false)}
-        password={password}
-      />
-    </div>
-  );
-};
-
-export default PasswordGenerator;
+                    <label className="text-sm text-gray-3
