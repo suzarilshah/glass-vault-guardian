@@ -1,18 +1,18 @@
 
 import React from 'react';
 import { useApiVault } from '@/hooks/useApiVault';
-import { MasterPasswordModal } from '@/components/MasterPasswordModal';
-import { VaultLockedScreen } from '@/components/vault/VaultLockedScreen';
-import { VaultHeader } from '@/components/vault/VaultHeader';
-import { GroupSidebar } from '@/components/vault/GroupSidebar';
-import { ApiEntryCard } from '@/components/vault/ApiEntryCard';
-import { ApiForm } from '@/components/vault/ApiForm';
-import { EmptyState } from '@/components/vault/EmptyState';
-import { ExpiredApiKeysAlert } from '@/components/vault/ExpiredApiKeysAlert';
-import { GroupManager } from '@/components/GroupManager';
-import { TimerSettings } from '@/components/vault/TimerSettings';
-import { ConfirmationDialog } from '@/components/vault/ConfirmationDialog';
-import { ApiHistory } from '@/components/vault/ApiHistory';
+import MasterPasswordModal from '@/components/MasterPasswordModal';
+import VaultLockedScreen from '@/components/vault/VaultLockedScreen';
+import VaultHeader from '@/components/vault/VaultHeader';
+import GroupSidebar from '@/components/vault/GroupSidebar';
+import ApiEntryCard from '@/components/vault/ApiEntryCard';
+import ApiForm from '@/components/vault/ApiForm';
+import EmptyState from '@/components/vault/EmptyState';
+import ExpiredApiKeysAlert from '@/components/vault/ExpiredApiKeysAlert';
+import GroupManager from '@/components/GroupManager';
+import TimerSettings from '@/components/vault/TimerSettings';
+import ConfirmationDialog from '@/components/vault/ConfirmationDialog';
+import ApiHistory from '@/components/vault/ApiHistory';
 import { useVaultTimer } from '@/hooks/useVaultTimer';
 import { useState } from 'react';
 
@@ -66,7 +66,6 @@ const ApiVault: React.FC<ApiVaultProps> = ({
   } = useVaultTimer({
     masterPassword,
     setMasterPassword,
-    setVisibleApiKeys: () => {},
     setShowForm,
     setEditingEntry,
     onMasterPasswordSet,

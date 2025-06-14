@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -40,7 +39,13 @@ export const useApiVaultOperations = ({
         return;
       }
 
-      setEntries(data || []);
+      // Map the Supabase data to ApiEntry type with proper environment typing
+      const typedEntries: ApiEntry[] = (data || []).map(entry => ({
+        ...entry,
+        environment: entry.environment as 'development' | 'staging' | 'production'
+      }));
+
+      setEntries(typedEntries);
     } catch (error) {
       console.error('Error fetching API entries:', error);
     }
