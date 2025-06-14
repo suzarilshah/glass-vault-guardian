@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { useApiVault } from '@/hooks/useApiVault';
-import MasterPasswordModal from '@/components/MasterPasswordModal';
 import VaultLockedScreen from '@/components/vault/VaultLockedScreen';
 import VaultHeader from '@/components/vault/VaultHeader';
 import GroupSidebar from '@/components/vault/GroupSidebar';
@@ -107,10 +106,11 @@ const ApiVault: React.FC<ApiVaultProps> = ({
     <div className="space-y-6">
       <VaultHeader
         remainingTime={remainingTime}
-        onAddNew={handleShowForm}
-        onManageGroups={() => setShowGroupManager(true)}
-        onTimerSettings={() => setShowTimerSettings(true)}
-        onLock={manualLockVault}
+        onShowTimerSettings={() => setShowTimerSettings(true)}
+        onShowGroupManager={() => setShowGroupManager(true)}
+        onExportPasswords={() => {}} // TODO: Implement export for API keys
+        onShowForm={handleShowForm}
+        onLockVault={manualLockVault}
       />
 
       {expiredEntries.length > 0 && (
@@ -127,7 +127,8 @@ const ApiVault: React.FC<ApiVaultProps> = ({
             selectedGroup={selectedGroup}
             onGroupSelect={setSelectedGroup}
             ungroupedCount={ungroupedCount}
-            totalCount={entries.length}
+            totalEntries={entries.length}
+            groupStats={groupStats}
           />
         </div>
 
@@ -170,9 +171,10 @@ const ApiVault: React.FC<ApiVaultProps> = ({
 
       <GroupManager
         isOpen={showGroupManager}
-        onClose={() => setShowGroupManager(false)}
-        onUpdate={fetchGroups}
-        type="api"
+        onClose={() => {
+          setShowGroupManager(false);
+          fetchGroups();
+        }}
       />
 
       {showTimerSettings && (

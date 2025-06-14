@@ -1,3 +1,4 @@
+
 import React from 'react';
 import GroupManager from './GroupManager';
 import VaultHeader from './vault/VaultHeader';
@@ -69,6 +70,19 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
       />
     );
   }
+
+  const getEmptyStateMessage = () => {
+    if (selectedGroup === 'all') {
+      return "No passwords found. Add your first password to get started!";
+    }
+    const selectedGroupName = groups.find(g => g.id === selectedGroup)?.name;
+    if (selectedGroupName) {
+      return `No passwords found in "${selectedGroupName}" group.`;
+    }
+    return selectedGroup === '' 
+      ? "No ungrouped passwords found." 
+      : "No passwords found in this group.";
+  };
 
   return (
     <div className="space-y-6">
@@ -142,8 +156,9 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
 
           {filteredEntries.length === 0 && !showForm && (
             <EmptyState
-              selectedGroup={selectedGroup}
-              onShowForm={handleShowForm}
+              onAddNew={handleShowForm}
+              message={getEmptyStateMessage()}
+              buttonText="Add Password"
             />
           )}
         </div>
