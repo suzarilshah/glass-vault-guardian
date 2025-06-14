@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Save, RefreshCw } from 'lucide-react';
 import { PasswordGroup, PasswordEntry, FormData } from '@/types/vault';
-import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 
 interface PasswordFormProps {
   formData: FormData;
@@ -46,35 +44,25 @@ const PasswordForm: React.FC<PasswordFormProps> = ({
           onChange={(e) => onFormDataChange({ username: e.target.value })}
           className="glass-input bg-white/5 border-white/20 text-white"
         />
-        <div className="md:col-span-2">
-          <div className="relative flex">
-            <Input
-              placeholder="Password"
-              type="text"
-              value={formData.password}
-              onChange={(e) => onFormDataChange({ password: e.target.value })}
-              className="glass-input bg-white/5 border-white/20 text-white pr-10"
-              autoComplete="off"
-            />
-            <Button
-              type="button"
-              onClick={onGeneratePassword}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 h-6 w-6 text-blue-400 hover:text-blue-300 bg-blue-100 border border-blue-300"
-              variant="ghost"
-              size="sm"
-              tabIndex={-1}
-            >
-              <RefreshCw className="w-3 h-3" />
-            </Button>
-          </div>
-          {formData.password && (
-            <div className="mt-3">
-              <PasswordStrengthIndicator 
-                password={formData.password} 
-                showWarning={true}
-              />
-            </div>
-          )}
+        <div className="relative flex">
+          <Input
+            placeholder="Password"
+            type="text"
+            value={formData.password}
+            onChange={(e) => onFormDataChange({ password: e.target.value })}
+            className="glass-input bg-white/5 border-white/20 text-white pr-10"
+            autoComplete="off"
+          />
+          <Button
+            type="button"
+            onClick={onGeneratePassword}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 h-6 w-6 text-blue-400 hover:text-blue-300 bg-blue-100 border border-blue-300"
+            variant="ghost"
+            size="sm"
+            tabIndex={-1}
+          >
+            <RefreshCw className="w-3 h-3" />
+          </Button>
         </div>
         <Input
           placeholder="Website"
