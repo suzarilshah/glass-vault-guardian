@@ -112,7 +112,7 @@ const KeywordObfuscator = ({ onPasswordGenerated }: KeywordObfuscatorProps) => {
 
           <Button
             onClick={handleObfuscate}
-            className="w-full glass-button border-white/20 text-white hover:bg-white/10"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white border border-blue-400 font-semibold"
             variant="outline"
           >
             <Wand2 className="w-4 h-4 mr-2" />

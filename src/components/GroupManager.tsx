@@ -321,7 +321,7 @@ const GroupManager: React.FC<GroupManagerProps> = ({ isOpen, onClose }) => {
             <Button
               onClick={handleClose}
               variant="outline"
-              className="border-white/20 text-white hover:bg-white/10"
+              className="bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200 hover:text-blue-900 border font-semibold"
             >
               Close
             </Button>
