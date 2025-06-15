@@ -1,5 +1,4 @@
 
-
 import { corsHeaders } from '../_shared/cors.ts';
 
 interface PasswordCheckRequest {
@@ -97,26 +96,41 @@ async function loadPasswordDatabase(): Promise<Set<string>> {
   // Parse the complete SAS URL
   const url = new URL(storageUrl);
   const baseUrl = `${url.protocol}//${url.hostname}`;
-  const sasParams = url.search; // Contains all SAS parameters with leading ?
-  const containerName = 'pws'; // Use the specific container name
+  const sasQuery = url.search; // This includes the leading '?'
+  const containerName = 'pws';
   
   console.log(`Base URL: ${baseUrl}`);
   console.log(`Container: ${containerName}`);
-  console.log(`SAS params present: ${sasParams ? 'Yes' : 'No'}`);
+  console.log(`SAS query length: ${sasQuery.length}`);
+
+  if (!sasQuery || sasQuery.length < 10) {
+    throw new Error('Invalid SAS token in Azure Storage URL');
+  }
 
   // Step 1: List blobs to find rockyou2024.zip
   console.log('Listing blobs in container...');
   
-  // Construct the proper Azure Blob Storage list URL
-  const listUrl = `${baseUrl}/${containerName}?restype=container&comp=list&${sasParams.substring(1)}`;
+  // Construct the list URL: baseUrl/container?restype=container&comp=list&sasParams
+  // We need to combine the SAS parameters with the list parameters
+  const listParams = new URLSearchParams();
+  listParams.set('restype', 'container');
+  listParams.set('comp', 'list');
   
-  console.log(`List URL constructed (params masked)`);
+  // Parse existing SAS parameters and add them
+  const sasParams = new URLSearchParams(sasQuery.substring(1)); // Remove leading '?'
+  for (const [key, value] of sasParams) {
+    listParams.set(key, value);
+  }
+  
+  const listUrl = `${baseUrl}/${containerName}?${listParams.toString()}`;
+  
+  console.log('Constructed list URL with all parameters');
   
   const listResponse = await fetch(listUrl);
   if (!listResponse.ok) {
     console.error(`Failed to list blobs. Status: ${listResponse.status}`);
     const responseText = await listResponse.text();
-    console.error(`Response: ${responseText.substring(0, 500)}`);
+    console.error(`Response text: ${responseText}`);
     throw new Error(`Failed to list blobs: ${listResponse.status} - ${listResponse.statusText}`);
   }
 
@@ -143,7 +157,8 @@ async function loadPasswordDatabase(): Promise<Set<string>> {
   console.log(`Found zip file: ${zipFileName}`);
 
   // Step 2: Download the zip file
-  const zipUrl = `${baseUrl}/${containerName}/${zipFileName}${sasParams}`;
+  // For download, we use the original SAS query string as-is
+  const zipUrl = `${baseUrl}/${containerName}/${zipFileName}${sasQuery}`;
   
   console.log(`Downloading zip file from Azure...`);
   
@@ -281,4 +296,3 @@ async function decompressData(compressedData: Uint8Array): Promise<Uint8Array> {
     throw new Error(`Failed to decompress data: ${error.message}`);
   }
 }
-
