@@ -1,4 +1,3 @@
-
 import { useVaultAuth } from './useVaultAuth';
 import { useVaultEntryOperations } from './useVaultEntryOperations';
 import { useVaultPasswordGeneration } from './useVaultPasswordGeneration';
@@ -19,6 +18,7 @@ interface UseVaultOperationsProps {
   lockTimeoutMinutes: number;
   onMasterPasswordSet?: (password: string | null) => void;
   vaultType?: 'password' | 'api' | 'certificate';
+  useUnifiedPassword?: boolean;
 }
 
 export const useVaultOperations = ({
@@ -34,6 +34,7 @@ export const useVaultOperations = ({
   lockTimeoutMinutes,
   onMasterPasswordSet,
   vaultType = 'password',
+  useUnifiedPassword,
 }: UseVaultOperationsProps) => {
   const { handleMasterPasswordSubmit } = useVaultAuth({
     setMasterPassword,
@@ -42,6 +43,7 @@ export const useVaultOperations = ({
     lockTimeoutMinutes,
     onMasterPasswordSet,
     vaultType,
+    useUnifiedPassword,
   });
 
   const { 
