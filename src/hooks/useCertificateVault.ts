@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,9 +9,18 @@ import { useCertificateVaultOperations } from './useCertificateVaultOperations';
 interface UseCertificateVaultProps {
   masterPassword?: string | null;
   onMasterPasswordSet?: (password: string | null) => void;
+  useUnifiedPassword?: boolean;
+  unifiedLockTimeoutMinutes?: number;
+  onUnifiedTimeoutChange?: (minutes: number) => void;
 }
 
-export const useCertificateVault = ({ masterPassword: propMasterPassword, onMasterPasswordSet }: UseCertificateVaultProps) => {
+export const useCertificateVault = ({ 
+  masterPassword: propMasterPassword, 
+  onMasterPasswordSet,
+  useUnifiedPassword = false,
+  unifiedLockTimeoutMinutes,
+  onUnifiedTimeoutChange
+}: UseCertificateVaultProps) => {
   const { user } = useAuth();
   const {
     entries,

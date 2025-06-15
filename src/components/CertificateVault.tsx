@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Settings, Clock, Shield } from 'lucide-react';
@@ -8,7 +9,7 @@ import CertificateEntryCard from './vault/CertificateEntryCard';
 import GroupSidebar from './vault/GroupSidebar';
 import VaultHeader from './vault/VaultHeader';
 import VaultLockedScreen from './vault/VaultLockedScreen';
-import TimerSettings from './Vault/TimerSettings';
+import TimerSettings from './vault/TimerSettings';
 import GroupManager from './GroupManager';
 import ExpiredCertificatesAlert from './vault/ExpiredCertificatesAlert';
 

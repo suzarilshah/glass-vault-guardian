@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { PasswordEntry, PasswordGroup } from '@/types/vault';
+import { PasswordEntry, FormData, Group } from '@/types/vault';
 import { useVaultState } from './useVaultState';
 import { useVaultTimer } from './useVaultTimer';
 import { useVaultOperations } from './useVaultOperations';
@@ -9,9 +9,18 @@ import { useVaultOperations } from './useVaultOperations';
 interface UsePasswordVaultProps {
   masterPassword?: string | null;
   onMasterPasswordSet?: (password: string | null) => void;
+  useUnifiedPassword?: boolean;
+  unifiedLockTimeoutMinutes?: number;
+  onUnifiedTimeoutChange?: (minutes: number) => void;
 }
 
-export const usePasswordVault = ({ masterPassword: propMasterPassword, onMasterPasswordSet }: UsePasswordVaultProps) => {
+export const usePasswordVault = ({ 
+  masterPassword: propMasterPassword, 
+  onMasterPasswordSet,
+  useUnifiedPassword = false,
+  unifiedLockTimeoutMinutes,
+  onUnifiedTimeoutChange
+}: UsePasswordVaultProps) => {
   const { user } = useAuth();
   const {
     entries,
@@ -51,23 +60,23 @@ export const usePasswordVault = ({ masterPassword: propMasterPassword, onMasterP
   } = useVaultTimer({
     masterPassword,
     setMasterPassword,
-    setVisiblePasswords,
     setShowForm,
     setEditingEntry,
     onMasterPasswordSet,
+    setVisiblePasswords,
   });
 
   const {
     fetchEntries,
     fetchGroups,
     handleMasterPasswordSubmit: baseHandleMasterPasswordSubmit,
-    generateNewPassword,
+    generateNewPassword: baseGenerateNewPassword,
     saveEntry: baseSaveEntry,
     editEntry,
     deleteEntry,
     copyPassword,
     regeneratePassword,
-    togglePasswordVisibility: baseTogglePasswordVisibility,
+    togglePasswordVisibility,
     exportPasswords: baseExportPasswords,
   } = useVaultOperations({
     masterPassword,
@@ -87,16 +96,17 @@ export const usePasswordVault = ({ masterPassword: propMasterPassword, onMasterP
     await baseHandleMasterPasswordSubmit(password, isCreatingMaster);
   }, [baseHandleMasterPasswordSubmit, isCreatingMaster]);
 
+  const generateNewPassword = useCallback(async (length: number = 16) => {
+    const newPassword = await baseGenerateNewPassword(length);
+    setFormData(prev => ({ ...prev, password: newPassword }));
+  }, [baseGenerateNewPassword, setFormData]);
+
   const saveEntry = useCallback(async () => {
     const result = await baseSaveEntry(formData, editingEntry);
     if (result) {
       resetForm();
     }
   }, [baseSaveEntry, formData, editingEntry, resetForm]);
-
-  const togglePasswordVisibility = useCallback((id: string) => {
-    baseTogglePasswordVisibility(id, visiblePasswords, setVisiblePasswords);
-  }, [baseTogglePasswordVisibility, visiblePasswords, setVisiblePasswords]);
 
   const exportPasswords = useCallback(async () => {
     await baseExportPasswords(entries, groups);
@@ -127,10 +137,18 @@ export const usePasswordVault = ({ masterPassword: propMasterPassword, onMasterP
     }
   }, [masterPassword, fetchEntries, handleFetchGroups]);
 
-  const filteredEntries = useMemo(() => selectedGroup === 'all' ? entries : entries.filter(entry => entry.group_id === selectedGroup), [entries, selectedGroup]);
-  const expiredEntries = useMemo(() => entries.filter(entry => entry.is_expired), [entries]);
+  const filteredEntries = useMemo(() => 
+    selectedGroup === 'all' ? entries : entries.filter(entry => entry.group_id === selectedGroup), 
+    [entries, selectedGroup]
+  );
+  
+  const expiredEntries = useMemo(() => entries.filter(entry => entry.expiration_days && parseInt(entry.expiration_days) > 0 && (new Date(Date.now() + parseInt(entry.expiration_days) * 24 * 60 * 60 * 1000) < new Date())), [entries]);
+  
   const { groupStats, ungroupedCount } = useMemo(() => {
-    const stats = groups.map(group => ({ ...group, count: entries.filter(entry => entry.group_id === group.id).length }));
+    const stats = groups.map(group => ({ 
+      ...group, 
+      count: entries.filter(entry => entry.group_id === group.id).length 
+    }));
     const ungroupedCount = entries.filter(entry => !entry.group_id).length;
     return { groupStats: stats, ungroupedCount };
   }, [groups, entries]);
@@ -157,16 +175,16 @@ export const usePasswordVault = ({ masterPassword: propMasterPassword, onMasterP
     setShowTimerSettings,
     setSelectedGroup,
     setFormData,
+    setVisiblePasswords,
     handleMasterPasswordSubmit,
     handleTimeoutChange,
     fetchGroups: handleFetchGroups,
-    fetchEntries,
     generateNewPassword,
-    regeneratePassword,
     saveEntry,
     editEntry,
     deleteEntry,
     copyPassword,
+    regeneratePassword,
     togglePasswordVisibility,
     exportPasswords,
     filteredEntries,
