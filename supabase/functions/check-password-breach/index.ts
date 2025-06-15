@@ -91,12 +91,35 @@ async function loadPasswordDatabase(): Promise<Set<string>> {
     throw new Error('Azure Storage URL not configured');
   }
 
+  console.log('Parsing Azure Storage URL...');
+  
+  // Parse the storage URL to extract components
+  const url = new URL(storageUrl);
+  const baseUrl = `${url.protocol}//${url.hostname}`;
+  const sasParams = url.search; // Contains the SAS token parameters
+  
+  // Extract container name from the pathname or use default
+  let containerName = 'pws'; // Default container name
+  if (url.pathname && url.pathname !== '/') {
+    const pathParts = url.pathname.split('/').filter(part => part.length > 0);
+    if (pathParts.length > 0) {
+      containerName = pathParts[0];
+    }
+  }
+
+  console.log(`Using container: ${containerName}`);
+  console.log(`Base URL: ${baseUrl}`);
+
   // Step 1: List blobs to find rockyou2024.zip
   console.log('Listing blobs in container...');
-  const listUrl = `${storageUrl}/breach-data?restype=container&comp=list`;
+  const listUrl = `${baseUrl}/${containerName}?restype=container&comp=list${sasParams}`;
+  
+  console.log(`List URL (without SAS): ${baseUrl}/${containerName}?restype=container&comp=list`);
   
   const listResponse = await fetch(listUrl);
   if (!listResponse.ok) {
+    console.error(`Failed to list blobs. Status: ${listResponse.status}`);
+    console.error(`Response text: ${await listResponse.text()}`);
     throw new Error(`Failed to list blobs: ${listResponse.status}`);
   }
 
@@ -106,6 +129,11 @@ async function loadPasswordDatabase(): Promise<Set<string>> {
   // Find rockyou2024.zip blob
   const nameMatch = xmlText.match(/<Name>([^<]*rockyou2024[^<]*\.zip)<\/Name>/i);
   if (!nameMatch) {
+    console.error('Available blobs:');
+    const allNames = xmlText.match(/<Name>([^<]+)<\/Name>/g);
+    if (allNames) {
+      allNames.forEach(name => console.log(`  - ${name.replace(/<\/?Name>/g, '')}`));
+    }
     throw new Error('rockyou2024.zip file not found in Azure container');
   }
 
@@ -113,11 +141,12 @@ async function loadPasswordDatabase(): Promise<Set<string>> {
   console.log(`Found zip file: ${zipFileName}`);
 
   // Step 2: Download the zip file
-  const zipUrl = `${storageUrl}/breach-data/${zipFileName}`;
-  console.log(`Downloading zip file from: ${zipUrl}`);
+  const zipUrl = `${baseUrl}/${containerName}/${zipFileName}${sasParams}`;
+  console.log(`Downloading zip file...`);
   
   const zipResponse = await fetch(zipUrl);
   if (!zipResponse.ok) {
+    console.error(`Failed to download zip file. Status: ${zipResponse.status}`);
     throw new Error(`Failed to download zip file: ${zipResponse.status}`);
   }
 
