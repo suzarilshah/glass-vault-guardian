@@ -29,6 +29,39 @@ export const useAIPasswordAnalysis = () => {
   const { toast } = useToast();
 
   const analyzePasswordWithAI = async (password: string, currentAnalysis: CurrentAnalysis) => {
+    // Rate limiting logic
+    const RATE_LIMIT_COUNT = 10;
+    const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+
+    try {
+      const analysisTimestamps: number[] = JSON.parse(localStorage.getItem('aiAnalysisTimestamps') || '[]');
+      const now = Date.now();
+
+      const recentTimestamps = analysisTimestamps.filter(
+        (timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS
+      );
+
+      if (recentTimestamps.length >= RATE_LIMIT_COUNT) {
+        toast({
+          title: "Rate Limit Exceeded",
+          description: "You have made too many requests. Please try again in a minute.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const newTimestamps = [...recentTimestamps, now];
+      localStorage.setItem('aiAnalysisTimestamps', JSON.stringify(newTimestamps));
+    } catch (error) {
+      console.error("Error with rate limiting logic:", error);
+      toast({
+        title: "Application Error",
+        description: "Could not apply rate limiting. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!password.trim()) {
       toast({
         title: "Error",
