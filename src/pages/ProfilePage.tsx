@@ -366,44 +366,53 @@ const ProfilePage = () => {
       }
   };
 
+  // Add a loading indicator for deletion
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
   const handleDeactivateAccount = async () => {
     if (!user) return;
 
+    setDeletingAccount(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          deactivated_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id);
+      // Call Supabase Edge Function to delete user and all data
+      const { data, error } = await supabase.functions.invoke("delete-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // Auth header is automatically included by supabase client
+        },
+      });
 
-      if (error) {
-        console.error('Error deactivating account:', error);
+      if (error || (data && data.error)) {
         toast({
           title: "Error",
-          description: "Failed to deactivate account",
-          variant: "destructive"
+          description:
+            (typeof data?.error === "string"
+              ? data.error
+              : Array.isArray(data?.error)
+              ? data.error.join(", ")
+              : "Failed to deactivate account") || error?.message,
+          variant: "destructive",
         });
+        setDeletingAccount(false);
         return;
       }
 
       toast({
-        title: "Account Deactivated",
-        description: "Your account has been deactivated",
-        variant: "destructive"
+        title: "Account Deleted",
+        description: "Your account has been completely deleted.",
       });
 
-      // Sign out user after deactivation
+      // Sign out user after deletion
       await signOut();
-      navigate('/');
-    } catch (error) {
-      console.error('Error deactivating account:', error);
+      navigate("/");
+    } catch (e: any) {
       toast({
         title: "Error",
-        description: "Failed to deactivate account",
-        variant: "destructive"
+        description: "Failed to completely delete account. Please contact support.",
+        variant: "destructive",
       });
+      setDeletingAccount(false);
     }
   };
 
@@ -685,9 +694,10 @@ const ProfilePage = () => {
               <Button
                 onClick={() => setShowDeactivateConfirm(true)}
                 className="bg-red-600 hover:bg-red-700 text-white"
+                disabled={deletingAccount}
               >
                 <AlertTriangle className="w-4 h-4 mr-2" />
-                Deactivate Account
+                {deletingAccount ? "Deleting Account..." : "Deactivate Account"}
               </Button>
             </div>
           </Card>
