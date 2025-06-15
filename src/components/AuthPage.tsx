@@ -7,7 +7,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/components/ui/input-otp";
 import { supabase } from '@/integrations/supabase/client';
-import PasswordStrengthIndicator from './vault/PasswordStrengthIndicator';
 import PasswordStrengthBar from './vault/PasswordStrengthBar';
 
 const AuthPage = () => {
@@ -22,6 +21,7 @@ const AuthPage = () => {
   const { toast } = useToast();
   const [isMfaChallenge, setIsMfaChallenge] = useState(false);
   const [mfaCode, setMfaCode] = useState('');
+  const [showVerificationReminder, setShowVerificationReminder] = useState(false);
 
   const validatePassword = (password: string, firstName: string, lastName: string): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
@@ -105,19 +105,18 @@ const AuthPage = () => {
 
   const handleSignUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password || !firstName || !lastName) {
       toast({ title: "Error", description: "Please fill in all fields", variant: "destructive" });
       return;
     }
 
-    // Validate password
     const validation = validatePassword(password, firstName, lastName);
     if (!validation.isValid) {
-      toast({ 
-        title: "Password Requirements Not Met", 
-        description: validation.errors.join(". "), 
-        variant: "destructive" 
+      toast({
+        title: "Password Requirements Not Met",
+        description: validation.errors.join(". "),
+        variant: "destructive"
       });
       return;
     }
@@ -129,7 +128,13 @@ const AuthPage = () => {
       if (error) {
         toast({ title: "Authentication Error", description: error.message, variant: "destructive" });
       } else {
-        toast({ title: "Success", description: "Account created! Please check your email to verify your account." });
+        // After successful signup, go to login screen and show reminder
+        setIsSignUp(false);
+        setShowVerificationReminder(true);
+        setEmail("");
+        setPassword("");
+        setFirstName("");
+        setLastName("");
       }
     } catch (error) {
       toast({ title: "Error", description: "An unexpected error occurred", variant: "destructive" });
@@ -174,6 +179,25 @@ const AuthPage = () => {
             {isMfaChallenge ? 'Enter the code from your authenticator app.' : (isSignUp ? 'Sign up for PW Shield' : 'Sign in to your account')}
           </p>
         </div>
+
+        {/* Verification Reminder after signup */}
+        {!isSignUp && showVerificationReminder && (
+          <div className="mb-5 bg-blue-900/60 border border-blue-500 rounded px-4 py-3 flex items-center justify-between">
+            <span className="text-blue-200 text-sm">
+              Please check your email and verify your account before logging in.
+            </span>
+            <button
+              aria-label="Dismiss reminder"
+              onClick={() => setShowVerificationReminder(false)}
+              className="ml-4 rounded-full hover:bg-blue-800/80 text-blue-200 transition p-1"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" className="inline-block align-middle">
+                <line x1="4" y1="4" x2="12" y2="12" stroke="#93c5fd" strokeWidth="2" strokeLinecap="round"/>
+                <line x1="4" y1="12" x2="12" y2="4" stroke="#93c5fd" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
+        )}
 
         {isMfaChallenge ? (
           <form onSubmit={handleMfaSubmit} className="space-y-4">
@@ -312,7 +336,7 @@ const AuthPage = () => {
 
             <div className="mt-6 text-center">
               <button
-                onClick={() => setIsSignUp(!isSignUp)}
+                onClick={() => { setIsSignUp(!isSignUp); setShowVerificationReminder(false); }}
                 className="text-green-400 hover:text-green-300 text-sm"
               >
                 {isSignUp
