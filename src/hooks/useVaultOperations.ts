@@ -18,6 +18,7 @@ interface UseVaultOperationsProps {
   startLockTimer: () => void;
   lockTimeoutMinutes: number;
   onMasterPasswordSet?: (password: string | null) => void;
+  vaultType?: 'password' | 'api' | 'certificate';
 }
 
 export const useVaultOperations = ({
@@ -32,6 +33,7 @@ export const useVaultOperations = ({
   startLockTimer,
   lockTimeoutMinutes,
   onMasterPasswordSet,
+  vaultType = 'password',
 }: UseVaultOperationsProps) => {
   const { handleMasterPasswordSubmit } = useVaultAuth({
     setMasterPassword,
@@ -39,6 +41,7 @@ export const useVaultOperations = ({
     setIsCreatingMaster,
     lockTimeoutMinutes,
     onMasterPasswordSet,
+    vaultType,
   });
 
   const { 

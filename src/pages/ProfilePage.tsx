@@ -14,6 +14,7 @@ import { analyzePasswordStrength } from '@/utils/passwordStrength';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/components/ui/input-otp";
 import { ShieldCheck } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import MasterPasswordSettings from '@/components/vault/MasterPasswordSettings';
 
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
@@ -490,6 +491,9 @@ const ProfilePage = () => {
             </div>
           </Card>
 
+          {/* Master Password Configuration */}
+          <MasterPasswordSettings profile={profile} />
+
           {/* Password Change Section */}
           <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
             <div className="flex items-center justify-between mb-4">
@@ -545,71 +549,7 @@ const ProfilePage = () => {
             )}
           </Card>
 
-          {/* Master Password Change Section */}
-          <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Key className="w-5 h-5 text-white" />
-                <h2 className="text-xl font-semibold text-white">Master Password</h2>
-              </div>
-              <Button
-                onClick={() => setShowMasterPasswordSection(!showMasterPasswordSection)}
-                variant="outline"
-                size="sm"
-                className="bg-white border-blue-400 text-blue-600 hover:bg-blue-50 hover:text-blue-700 border font-semibold"
-              >
-                {showMasterPasswordSection ? 'Cancel' : 'Change Master Password'}
-              </Button>
-            </div>
-
-            {showMasterPasswordSection && (
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="currentMasterPassword" className="text-gray-300">Current Master Password</Label>
-                  <Input
-                    id="currentMasterPassword"
-                    type="password"
-                    value={masterPasswordData.currentMasterPassword}
-                    onChange={(e) => setMasterPasswordData(prev => ({ ...prev, currentMasterPassword: e.target.value }))}
-                    className="glass-input bg-white/5 border-white/20 text-white"
-                    placeholder="Enter current master password"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="newMasterPassword" className="text-gray-300">New Master Password</Label>
-                  <Input
-                    id="newMasterPassword"
-                    type="password"
-                    value={masterPasswordData.newMasterPassword}
-                    onChange={(e) => setMasterPasswordData(prev => ({ ...prev, newMasterPassword: e.target.value }))}
-                    className="glass-input bg-white/5 border-white/20 text-white"
-                    placeholder="Enter new master password"
-                  />
-                  <AdvancedPasswordStrengthIndicator 
-                    password={masterPasswordData.newMasterPassword} 
-                    showDetailed={true}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="confirmMasterPassword" className="text-gray-300">Confirm New Master Password</Label>
-                  <Input
-                    id="confirmMasterPassword"
-                    type="password"
-                    value={masterPasswordData.confirmMasterPassword}
-                    onChange={(e) => setMasterPasswordData(prev => ({ ...prev, confirmMasterPassword: e.target.value }))}
-                    className="glass-input bg-white/5 border-white/20 text-white"
-                    placeholder="Confirm new master password"
-                  />
-                </div>
-                <Button
-                  onClick={handleMasterPasswordChange}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  Update Master Password
-                </Button>
-              </div>
-            )}
-          </Card>
+          {/* Master Password Change Section - Remove this section since it's now handled by MasterPasswordSettings */}
 
           {/* Two-Factor Authentication Section */}
           <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">

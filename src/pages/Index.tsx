@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import PasswordGenerator from '@/components/PasswordGenerator';
 import PasswordVault from '@/components/PasswordVault';
@@ -8,22 +8,87 @@ import CertificateVault from '@/components/CertificateVault';
 import AuthPage from '@/components/AuthPage';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const { user, loading } = useAuth();
   const [currentView, setCurrentView] = useState<'generator' | 'vault' | 'api-vault' | 'certificate-vault'>('generator');
-  const [masterPassword, setMasterPassword] = useState<string | null>(null);
+  const [masterPasswords, setMasterPasswords] = useState<{
+    unified: string | null;
+    password: string | null;
+    api: string | null;
+    certificate: string | null;
+  }>({
+    unified: null,
+    password: null,
+    api: null,
+    certificate: null,
+  });
+  const [useUnifiedPassword, setUseUnifiedPassword] = useState(true);
 
-  const handleMasterPasswordSet = (password: string | null) => {
-    setMasterPassword(password);
+  useEffect(() => {
+    if (user) {
+      checkUnifiedPasswordSetting();
+    }
+  }, [user]);
+
+  const checkUnifiedPasswordSetting = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_master_passwords')
+        .select('use_unified_password')
+        .eq('user_id', user.id)
+        .limit(1)
+        .single();
+
+      if (!error && data) {
+        setUseUnifiedPassword(data.use_unified_password);
+      }
+    } catch (error) {
+      console.error('Error checking unified password setting:', error);
+    }
+  };
+
+  const handleMasterPasswordSet = (password: string | null, vaultType?: 'password' | 'api' | 'certificate') => {
+    if (useUnifiedPassword) {
+      // If using unified password, set it for all vaults
+      setMasterPasswords({
+        unified: password,
+        password: password,
+        api: password,
+        certificate: password,
+      });
+    } else {
+      // Set password for specific vault type
+      if (vaultType) {
+        setMasterPasswords(prev => ({
+          ...prev,
+          [vaultType]: password,
+        }));
+      }
+    }
   };
 
   const handleNavigation = (view: 'generator' | 'vault' | 'api-vault' | 'certificate-vault') => {
     setCurrentView(view);
-    // Only clear master password when going to generator
+    // Only clear master passwords when going to generator
     if (view === 'generator') {
-      setMasterPassword(null);
+      setMasterPasswords({
+        unified: null,
+        password: null,
+        api: null,
+        certificate: null,
+      });
     }
+  };
+
+  const getMasterPasswordForVault = (vaultType: 'password' | 'api' | 'certificate') => {
+    if (useUnifiedPassword) {
+      return masterPasswords.unified;
+    }
+    return masterPasswords[vaultType];
   };
 
   if (loading) {
@@ -63,22 +128,22 @@ const Index = () => {
           
           {currentView === 'vault' && (
             <PasswordVault 
-              masterPassword={masterPassword} 
-              onMasterPasswordSet={handleMasterPasswordSet}
+              masterPassword={getMasterPasswordForVault('password')} 
+              onMasterPasswordSet={(password) => handleMasterPasswordSet(password, 'password')}
             />
           )}
 
           {currentView === 'api-vault' && (
             <ApiVault 
-              masterPassword={masterPassword} 
-              onMasterPasswordSet={handleMasterPasswordSet}
+              masterPassword={getMasterPasswordForVault('api')} 
+              onMasterPasswordSet={(password) => handleMasterPasswordSet(password, 'api')}
             />
           )}
 
           {currentView === 'certificate-vault' && (
             <CertificateVault 
-              masterPassword={masterPassword} 
-              onMasterPasswordSet={handleMasterPasswordSet}
+              masterPassword={getMasterPasswordForVault('certificate')} 
+              onMasterPasswordSet={(password) => handleMasterPasswordSet(password, 'certificate')}
             />
           )}
         </div>
