@@ -18,11 +18,17 @@ import { useState } from 'react';
 interface ApiVaultProps {
   masterPassword: string | null;
   onMasterPasswordSet: (password: string | null) => void;
+  useUnifiedPassword?: boolean;
+  unifiedLockTimeoutMinutes?: number;
+  onUnifiedTimeoutChange?: (minutes: number) => void;
 }
 
 const ApiVault: React.FC<ApiVaultProps> = ({ 
   masterPassword: propMasterPassword, 
-  onMasterPasswordSet 
+  onMasterPasswordSet,
+  useUnifiedPassword = false,
+  unifiedLockTimeoutMinutes,
+  onUnifiedTimeoutChange
 }) => {
   const [masterPassword, setMasterPassword] = useState<string | null>(propMasterPassword);
   const [showMasterModal, setShowMasterModal] = useState(!masterPassword);
@@ -68,6 +74,7 @@ const ApiVault: React.FC<ApiVaultProps> = ({
     setShowForm,
     setEditingEntry,
     onMasterPasswordSet,
+    setVisiblePasswords: undefined,
   });
 
   const { downloadTemplate, importData } = useApiVaultImport({
@@ -103,15 +110,19 @@ const ApiVault: React.FC<ApiVaultProps> = ({
   if (!masterPassword) {
     return (
       <VaultLockedScreen 
+        type="API"
         showMasterModal={showMasterModal}
         setShowMasterModal={setShowMasterModal}
         handleMasterPasswordSubmit={handleMasterPasswordSubmit}
         isCreatingMaster={false}
-        lockTimeoutMinutes={lockTimeoutMinutes}
-        handleTimeoutChange={handleTimeoutChange}
+        lockTimeoutMinutes={useUnifiedPassword ? unifiedLockTimeoutMinutes || 5 : lockTimeoutMinutes}
+        handleTimeoutChange={useUnifiedPassword ? onUnifiedTimeoutChange : handleTimeoutChange}
       />
     );
   }
+
+  const effectiveLockTimeoutMinutes = useUnifiedPassword ? (unifiedLockTimeoutMinutes || 5) : lockTimeoutMinutes;
+  const effectiveHandleTimeoutChange = useUnifiedPassword ? onUnifiedTimeoutChange : handleTimeoutChange;
 
   return (
     <div className="space-y-6">
@@ -126,8 +137,8 @@ const ApiVault: React.FC<ApiVaultProps> = ({
         onDownloadTemplate={downloadTemplate}
         title="API Vault"
         addButtonText="Add API Key"
-        lockTimeoutMinutes={lockTimeoutMinutes}
-        onTimeoutChange={handleTimeoutChange}
+        lockTimeoutMinutes={effectiveLockTimeoutMinutes}
+        onTimeoutChange={effectiveHandleTimeoutChange}
       />
 
       {expiredEntries.length > 0 && (
@@ -197,8 +208,8 @@ const ApiVault: React.FC<ApiVaultProps> = ({
 
       {showTimerSettings && (
         <TimerSettings
-          lockTimeoutMinutes={lockTimeoutMinutes}
-          onTimeoutChange={handleTimeoutChange}
+          lockTimeoutMinutes={effectiveLockTimeoutMinutes}
+          onTimeoutChange={effectiveHandleTimeoutChange}
           onClose={() => setShowTimerSettings(false)}
         />
       )}

@@ -12,6 +12,7 @@ interface UseVaultAuthProps {
   lockTimeoutMinutes: number;
   onMasterPasswordSet?: (password: string | null) => void;
   vaultType?: 'password' | 'api' | 'certificate';
+  useUnifiedPassword?: boolean;
 }
 
 export const useVaultAuth = ({
@@ -21,6 +22,7 @@ export const useVaultAuth = ({
   lockTimeoutMinutes,
   onMasterPasswordSet,
   vaultType = 'password',
+  useUnifiedPassword = false,
 }: UseVaultAuthProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -35,7 +37,7 @@ export const useVaultAuth = ({
           user_id: user?.id, 
           master_password_hash: hashedPassword,
           vault_type: vaultType,
-          use_unified_password: true // Default to unified password for new users
+          use_unified_password: useUnifiedPassword
         });
       
       if (error) { 
@@ -63,9 +65,14 @@ export const useVaultAuth = ({
           setMasterPassword(password);
           setShowMasterModal(false);
           onMasterPasswordSet?.(password);
+          
+          const timeoutMessage = useUnifiedPassword 
+            ? `Unified vault unlocked (auto-lock in ${lockTimeoutMinutes} minutes)`
+            : `Vault unlocked (auto-lock in ${lockTimeoutMinutes} minutes)`;
+          
           toast({ 
             title: "Success", 
-            description: `Vault unlocked (auto-lock in ${lockTimeoutMinutes} minutes)` 
+            description: timeoutMessage 
           });
           return;
         }
@@ -94,7 +101,7 @@ export const useVaultAuth = ({
       // If we get here, password was incorrect
       toast({ title: "Error", description: "Incorrect master password", variant: "destructive" });
     }
-  }, [user, toast, setMasterPassword, setShowMasterModal, setIsCreatingMaster, onMasterPasswordSet, lockTimeoutMinutes, vaultType]);
+  }, [user, toast, setMasterPassword, setShowMasterModal, setIsCreatingMaster, onMasterPasswordSet, lockTimeoutMinutes, vaultType, useUnifiedPassword]);
 
   return {
     handleMasterPasswordSubmit,

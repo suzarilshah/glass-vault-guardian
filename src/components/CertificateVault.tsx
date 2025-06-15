@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Settings, Clock, Shield } from 'lucide-react';
@@ -9,18 +8,24 @@ import CertificateEntryCard from './vault/CertificateEntryCard';
 import GroupSidebar from './vault/GroupSidebar';
 import VaultHeader from './vault/VaultHeader';
 import VaultLockedScreen from './vault/VaultLockedScreen';
-import TimerSettings from './vault/TimerSettings';
+import TimerSettings from './Vault/TimerSettings';
 import GroupManager from './GroupManager';
 import ExpiredCertificatesAlert from './vault/ExpiredCertificatesAlert';
 
 interface CertificateVaultProps {
   masterPassword?: string | null;
   onMasterPasswordSet?: (password: string | null) => void;
+  useUnifiedPassword?: boolean;
+  unifiedLockTimeoutMinutes?: number;
+  onUnifiedTimeoutChange?: (minutes: number) => void;
 }
 
 const CertificateVault: React.FC<CertificateVaultProps> = ({ 
   masterPassword: propMasterPassword, 
-  onMasterPasswordSet 
+  onMasterPasswordSet,
+  useUnifiedPassword = false,
+  unifiedLockTimeoutMinutes,
+  onUnifiedTimeoutChange
 }) => {
   const {
     entries,
@@ -56,7 +61,13 @@ const CertificateVault: React.FC<CertificateVaultProps> = ({
     ungroupedCount,
     handleShowForm,
     manualLockVault,
-  } = useCertificateVault({ masterPassword: propMasterPassword, onMasterPasswordSet });
+  } = useCertificateVault({ 
+    masterPassword: propMasterPassword, 
+    onMasterPasswordSet,
+    useUnifiedPassword,
+    unifiedLockTimeoutMinutes,
+    onUnifiedTimeoutChange
+  });
 
   if (!masterPassword) {
     return (
@@ -66,8 +77,8 @@ const CertificateVault: React.FC<CertificateVaultProps> = ({
         setShowMasterModal={setShowMasterModal}
         handleMasterPasswordSubmit={handleMasterPasswordSubmit}
         isCreatingMaster={isCreatingMaster}
-        lockTimeoutMinutes={lockTimeoutMinutes}
-        handleTimeoutChange={handleTimeoutChange}
+        lockTimeoutMinutes={useUnifiedPassword ? unifiedLockTimeoutMinutes || 5 : lockTimeoutMinutes}
+        handleTimeoutChange={useUnifiedPassword ? onUnifiedTimeoutChange : handleTimeoutChange}
       />
     );
   }
@@ -84,6 +95,9 @@ const CertificateVault: React.FC<CertificateVaultProps> = ({
     );
   }
 
+  const effectiveLockTimeoutMinutes = useUnifiedPassword ? (unifiedLockTimeoutMinutes || 5) : lockTimeoutMinutes;
+  const effectiveHandleTimeoutChange = useUnifiedPassword ? onUnifiedTimeoutChange : handleTimeoutChange;
+
   return (
     <div className="space-y-6">
       <VaultHeader
@@ -91,13 +105,14 @@ const CertificateVault: React.FC<CertificateVaultProps> = ({
         subtitle="Secure storage for SSL/TLS certificates and keys"
         icon={Shield}
         remainingTime={remainingTime}
-        lockTimeoutMinutes={lockTimeoutMinutes}
+        lockTimeoutMinutes={effectiveLockTimeoutMinutes}
         onLockVault={manualLockVault}
         onShowTimerSettings={() => setShowTimerSettings(true)}
         onShowGroupManager={() => setShowGroupManager(true)}
         onExportPasswords={exportCertificates}
         onShowForm={handleShowForm}
         addButtonText="Add Certificate"
+        onTimeoutChange={effectiveHandleTimeoutChange}
       />
 
       {expiredEntries.length > 0 && (
@@ -201,8 +216,8 @@ const CertificateVault: React.FC<CertificateVaultProps> = ({
       <TimerSettings
         isOpen={showTimerSettings}
         onClose={() => setShowTimerSettings(false)}
-        lockTimeoutMinutes={lockTimeoutMinutes}
-        onTimeoutChange={handleTimeoutChange}
+        lockTimeoutMinutes={effectiveLockTimeoutMinutes}
+        onTimeoutChange={effectiveHandleTimeoutChange}
       />
     </div>
   );

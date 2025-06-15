@@ -14,9 +14,18 @@ import VaultLockedScreen from './vault/VaultLockedScreen';
 interface PasswordVaultProps {
   masterPassword?: string | null;
   onMasterPasswordSet?: (password: string | null) => void;
+  useUnifiedPassword?: boolean;
+  unifiedLockTimeoutMinutes?: number;
+  onUnifiedTimeoutChange?: (minutes: number) => void;
 }
 
-const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMasterPassword, onMasterPasswordSet }) => {
+const PasswordVault: React.FC<PasswordVaultProps> = ({ 
+  masterPassword: propMasterPassword, 
+  onMasterPasswordSet,
+  useUnifiedPassword = false,
+  unifiedLockTimeoutMinutes,
+  onUnifiedTimeoutChange
+}) => {
   const {
     entries,
     groups,
@@ -57,7 +66,13 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
     handleShowForm,
     manualLockVault,
     fetchEntries,
-  } = usePasswordVault({ masterPassword: propMasterPassword, onMasterPasswordSet });
+  } = usePasswordVault({ 
+    masterPassword: propMasterPassword, 
+    onMasterPasswordSet,
+    useUnifiedPassword,
+    unifiedLockTimeoutMinutes,
+    onUnifiedTimeoutChange
+  });
 
   const { downloadTemplate, importData } = usePasswordVaultImport({
     masterPassword,
@@ -71,8 +86,8 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
         setShowMasterModal={setShowMasterModal}
         handleMasterPasswordSubmit={handleMasterPasswordSubmit}
         isCreatingMaster={isCreatingMaster}
-        lockTimeoutMinutes={lockTimeoutMinutes}
-        handleTimeoutChange={handleTimeoutChange}
+        lockTimeoutMinutes={useUnifiedPassword ? unifiedLockTimeoutMinutes || 5 : lockTimeoutMinutes}
+        handleTimeoutChange={useUnifiedPassword ? onUnifiedTimeoutChange : handleTimeoutChange}
       />
     );
   }
@@ -90,6 +105,9 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
       : "No passwords found in this group.";
   };
 
+  const effectiveLockTimeoutMinutes = useUnifiedPassword ? (unifiedLockTimeoutMinutes || 5) : lockTimeoutMinutes;
+  const effectiveHandleTimeoutChange = useUnifiedPassword ? onUnifiedTimeoutChange : handleTimeoutChange;
+
   return (
     <div className="space-y-6">
       <VaultHeader
@@ -101,14 +119,14 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
         onLockVault={manualLockVault}
         onImportData={importData}
         onDownloadTemplate={downloadTemplate}
-        lockTimeoutMinutes={lockTimeoutMinutes}
-        onTimeoutChange={handleTimeoutChange}
+        lockTimeoutMinutes={effectiveLockTimeoutMinutes}
+        onTimeoutChange={effectiveHandleTimeoutChange}
       />
 
       {showTimerSettings && (
         <TimerSettings
-          lockTimeoutMinutes={lockTimeoutMinutes}
-          onTimeoutChange={handleTimeoutChange}
+          lockTimeoutMinutes={effectiveLockTimeoutMinutes}
+          onTimeoutChange={effectiveHandleTimeoutChange}
           onClose={() => setShowTimerSettings(false)}
         />
       )}

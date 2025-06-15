@@ -25,6 +25,7 @@ const Index = () => {
     certificate: null,
   });
   const [useUnifiedPassword, setUseUnifiedPassword] = useState(true);
+  const [unifiedLockTimeoutMinutes, setUnifiedLockTimeoutMinutes] = useState(5);
 
   useEffect(() => {
     if (user) {
@@ -91,6 +92,10 @@ const Index = () => {
     return masterPasswords[vaultType];
   };
 
+  const handleUnifiedTimeoutChange = (minutes: number) => {
+    setUnifiedLockTimeoutMinutes(minutes);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
@@ -130,6 +135,9 @@ const Index = () => {
             <PasswordVault 
               masterPassword={getMasterPasswordForVault('password')} 
               onMasterPasswordSet={(password) => handleMasterPasswordSet(password, 'password')}
+              useUnifiedPassword={useUnifiedPassword}
+              unifiedLockTimeoutMinutes={useUnifiedPassword ? unifiedLockTimeoutMinutes : undefined}
+              onUnifiedTimeoutChange={useUnifiedPassword ? handleUnifiedTimeoutChange : undefined}
             />
           )}
 
@@ -137,6 +145,9 @@ const Index = () => {
             <ApiVault 
               masterPassword={getMasterPasswordForVault('api')} 
               onMasterPasswordSet={(password) => handleMasterPasswordSet(password, 'api')}
+              useUnifiedPassword={useUnifiedPassword}
+              unifiedLockTimeoutMinutes={useUnifiedPassword ? unifiedLockTimeoutMinutes : undefined}
+              onUnifiedTimeoutChange={useUnifiedPassword ? handleUnifiedTimeoutChange : undefined}
             />
           )}
 
@@ -144,6 +155,9 @@ const Index = () => {
             <CertificateVault 
               masterPassword={getMasterPasswordForVault('certificate')} 
               onMasterPasswordSet={(password) => handleMasterPasswordSet(password, 'certificate')}
+              useUnifiedPassword={useUnifiedPassword}
+              unifiedLockTimeoutMinutes={useUnifiedPassword ? unifiedLockTimeoutMinutes : undefined}
+              onUnifiedTimeoutChange={useUnifiedPassword ? handleUnifiedTimeoutChange : undefined}
             />
           )}
         </div>
