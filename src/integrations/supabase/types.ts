@@ -130,6 +130,130 @@ export type Database = {
           },
         ]
       }
+      certificate_entries: {
+        Row: {
+          certificate_file_encrypted: string
+          certificate_type: string | null
+          common_name: string | null
+          created_at: string
+          environment: string | null
+          expires_at: string | null
+          group_id: string | null
+          id: string
+          is_expired: boolean | null
+          issuer: string | null
+          passphrase_encrypted: string | null
+          private_key_encrypted: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          certificate_file_encrypted: string
+          certificate_type?: string | null
+          common_name?: string | null
+          created_at?: string
+          environment?: string | null
+          expires_at?: string | null
+          group_id?: string | null
+          id?: string
+          is_expired?: boolean | null
+          issuer?: string | null
+          passphrase_encrypted?: string | null
+          private_key_encrypted?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          certificate_file_encrypted?: string
+          certificate_type?: string | null
+          common_name?: string | null
+          created_at?: string
+          environment?: string | null
+          expires_at?: string | null
+          group_id?: string | null
+          id?: string
+          is_expired?: boolean | null
+          issuer?: string | null
+          passphrase_encrypted?: string | null
+          private_key_encrypted?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_entries_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      certificate_groups: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      certificate_histories: {
+        Row: {
+          certificate_file_encrypted: string
+          changed_at: string
+          entry_id: string
+          id: string
+          private_key_encrypted: string | null
+          user_id: string
+        }
+        Insert: {
+          certificate_file_encrypted: string
+          changed_at?: string
+          entry_id: string
+          id?: string
+          private_key_encrypted?: string | null
+          user_id: string
+        }
+        Update: {
+          certificate_file_encrypted?: string
+          changed_at?: string
+          entry_id?: string
+          id?: string
+          private_key_encrypted?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_histories_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       password_entries: {
         Row: {
           created_at: string

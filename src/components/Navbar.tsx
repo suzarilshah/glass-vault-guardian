@@ -1,99 +1,139 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Shield, LogOut, User, Key, Database } from 'lucide-react';
+import { Zap, Lock, Key, Shield, User, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Link } from "react-router-dom";
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface NavbarProps {
   onShowVault: () => void;
   onShowApiVault: () => void;
-  currentView: 'generator' | 'vault' | 'api-vault';
+  onShowCertificateVault: () => void;
+  currentView: 'generator' | 'vault' | 'api-vault' | 'certificate-vault';
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onShowVault, onShowApiVault, currentView }) => {
+const Navbar = ({ onShowVault, onShowApiVault, onShowCertificateVault, currentView }: NavbarProps) => {
   const { user, signOut } = useAuth();
+  const { toast } = useToast();
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.functions.invoke('delete-user', {
+        headers: {
+          Authorization: `Bearer ${supabase.auth.getSession().data.session?.access_token}`,
+        },
+      });
+
+      if (error) {
+        console.error('Error deleting account:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete account. Please try again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Account deleted successfully.",
+        });
+        await signOut();
+      }
+    } catch (error) {
+      console.error('Unexpected error deleting account:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
-    <nav className="glass-card bg-white/5 backdrop-blur-xl border-white/20 px-6 py-4 mb-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <Shield className="w-6 h-6 text-green-400" />
-            <h1 className="text-xl font-bold text-white">AI PW Shield</h1>
-          </div>
-          
-          {user && (
-            <div className="flex items-center gap-4">
-              <Button
-                variant={currentView === 'generator' ? 'default' : 'ghost'}
-                size="sm"
-                className="text-white"
-                onClick={() => window.location.reload()}
-              >
-                <Key className="w-4 h-4 mr-2" />
-                Generator
-              </Button>
-              <Button
-                variant={currentView === 'vault' ? 'default' : 'ghost'}
-                size="sm"
-                className="text-white"
-                onClick={onShowVault}
-              >
-                <Shield className="w-4 h-4 mr-2" />
-                Password Vault
-              </Button>
-              <Button
-                variant={currentView === 'api-vault' ? 'default' : 'ghost'}
-                size="sm"
-                className="text-white"
-                onClick={onShowApiVault}
-              >
-                <Database className="w-4 h-4 mr-2" />
-                API Vault
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {user ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-white">
-                <User className="w-4 h-4 mr-2" />
-                {user.email}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="glass-card bg-white/10 backdrop-blur-xl border-white/20">
-              <DropdownMenuItem className="text-white" asChild>
-                <Link to="/profile" className="flex items-center">
-                  <User className="w-4 h-4 mr-2" />
-                  Profile
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-white/20" />
-              <DropdownMenuItem 
-                className="text-red-400 hover:text-red-300"
-                onClick={signOut}
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <div className="text-sm text-gray-400">
-            Please sign in to access password vault
-          </div>
-        )}
+    <nav className="flex items-center justify-between py-4 mb-8">
+      <div className="flex items-center space-x-6">
+        <Button
+          onClick={() => window.location.reload()}
+          variant={currentView === 'generator' ? 'default' : 'ghost'}
+          className={currentView === 'generator' 
+            ? 'glass-button bg-green-600 hover:bg-green-700 text-white' 
+            : 'text-gray-300 hover:text-white'
+          }
+        >
+          <Zap className="w-4 h-4 mr-2" />
+          Generator
+        </Button>
+        <Button
+          onClick={onShowVault}
+          variant={currentView === 'vault' ? 'default' : 'ghost'}
+          className={currentView === 'vault' 
+            ? 'glass-button bg-green-600 hover:bg-green-700 text-white' 
+            : 'text-gray-300 hover:text-white'
+          }
+        >
+          <Lock className="w-4 h-4 mr-2" />
+          Password Vault
+        </Button>
+        <Button
+          onClick={onShowApiVault}
+          variant={currentView === 'api-vault' ? 'default' : 'ghost'}
+          className={currentView === 'api-vault' 
+            ? 'glass-button bg-green-600 hover:bg-green-700 text-white' 
+            : 'text-gray-300 hover:text-white'
+          }
+        >
+          <Key className="w-4 h-4 mr-2" />
+          API Vault
+        </Button>
+        <Button
+          onClick={onShowCertificateVault}
+          variant={currentView === 'certificate-vault' ? 'default' : 'ghost'}
+          className={currentView === 'certificate-vault' 
+            ? 'glass-button bg-green-600 hover:bg-green-700 text-white' 
+            : 'text-gray-300 hover:text-white'
+          }
+        >
+          <Shield className="w-4 h-4 mr-2" />
+          Certificate Vault
+        </Button>
       </div>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0 lg:h-10 lg:w-10 rounded-full">
+            <Avatar className="h-8 w-8 lg:h-10 lg:w-10">
+              <AvatarImage src={user?.user_metadata?.avatar_url} alt={user?.user_metadata?.full_name} />
+              <AvatarFallback>{user?.user_metadata?.full_name?.charAt(0)}</AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem disabled>{user?.email}</DropdownMenuItem>
+          <DropdownMenuItem onClick={signOut}>
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign out
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="text-red-500" onClick={handleDeleteAccount} disabled={isDeleting}>
+            <User className="mr-2 h-4 w-4" />
+            {isDeleting ? 'Deleting...' : 'Delete Account'}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </nav>
   );
 };

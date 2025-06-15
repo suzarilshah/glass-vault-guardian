@@ -4,20 +4,21 @@ import { useAuth } from '@/contexts/AuthContext';
 import PasswordGenerator from '@/components/PasswordGenerator';
 import PasswordVault from '@/components/PasswordVault';
 import ApiVault from '@/components/ApiVault';
+import CertificateVault from '@/components/CertificateVault';
 import AuthPage from '@/components/AuthPage';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
 const Index = () => {
   const { user, loading } = useAuth();
-  const [currentView, setCurrentView] = useState<'generator' | 'vault' | 'api-vault'>('generator');
+  const [currentView, setCurrentView] = useState<'generator' | 'vault' | 'api-vault' | 'certificate-vault'>('generator');
   const [masterPassword, setMasterPassword] = useState<string | null>(null);
 
   const handleMasterPasswordSet = (password: string | null) => {
     setMasterPassword(password);
   };
 
-  const handleNavigation = (view: 'generator' | 'vault' | 'api-vault') => {
+  const handleNavigation = (view: 'generator' | 'vault' | 'api-vault' | 'certificate-vault') => {
     setCurrentView(view);
     // Only clear master password when going to generator
     if (view === 'generator') {
@@ -44,6 +45,7 @@ const Index = () => {
           <Navbar 
             onShowVault={() => handleNavigation('vault')}
             onShowApiVault={() => handleNavigation('api-vault')}
+            onShowCertificateVault={() => handleNavigation('certificate-vault')}
             currentView={currentView}
           />
           
@@ -68,6 +70,13 @@ const Index = () => {
 
           {currentView === 'api-vault' && (
             <ApiVault 
+              masterPassword={masterPassword} 
+              onMasterPasswordSet={handleMasterPasswordSet}
+            />
+          )}
+
+          {currentView === 'certificate-vault' && (
+            <CertificateVault 
               masterPassword={masterPassword} 
               onMasterPasswordSet={handleMasterPasswordSet}
             />
