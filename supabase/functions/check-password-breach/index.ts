@@ -93,18 +93,23 @@ async function loadPasswordDatabase(): Promise<Set<string>> {
 
   console.log('Parsing Azure Storage URL...');
   
-  // Parse the storage URL to extract components
+  // Parse the storage URL - it should be a complete SAS URL
   const url = new URL(storageUrl);
-  const baseUrl = `${url.protocol}//${url.hostname}`;
-  const sasParams = url.search; // Contains the SAS token parameters
   
-  // Extract container name from the pathname or use default
-  let containerName = 'pws'; // Default container name
+  // Check if this is already a complete SAS URL with container
+  let baseUrl, containerName, sasParams;
+  
   if (url.pathname && url.pathname !== '/') {
+    // URL already includes container path
     const pathParts = url.pathname.split('/').filter(part => part.length > 0);
-    if (pathParts.length > 0) {
-      containerName = pathParts[0];
-    }
+    baseUrl = `${url.protocol}//${url.hostname}`;
+    containerName = pathParts[0];
+    sasParams = url.search;
+  } else {
+    // URL is just the storage account, use default container
+    baseUrl = storageUrl.replace(/\/$/, ''); // Remove trailing slash
+    containerName = 'pws';
+    sasParams = '';
   }
 
   console.log(`Using container: ${containerName}`);
@@ -112,14 +117,24 @@ async function loadPasswordDatabase(): Promise<Set<string>> {
 
   // Step 1: List blobs to find rockyou2024.zip
   console.log('Listing blobs in container...');
-  const listUrl = `${baseUrl}/${containerName}?restype=container&comp=list${sasParams}`;
   
-  console.log(`List URL (without SAS): ${baseUrl}/${containerName}?restype=container&comp=list`);
+  // Construct the list URL properly
+  let listUrl;
+  if (sasParams) {
+    // If we have SAS params, use them with proper separator
+    const separator = sasParams.startsWith('?') ? '&' : '?';
+    listUrl = `${baseUrl}/${containerName}${separator}restype=container&comp=list${sasParams.startsWith('?') ? sasParams.substring(1) : sasParams}`;
+  } else {
+    listUrl = `${baseUrl}/${containerName}?restype=container&comp=list`;
+  }
+  
+  console.log(`List URL: ${listUrl.replace(/([?&])(sig|st|se|spr|sp|sv)=[^&]*/g, '$1$2=***')}`); // Log URL with masked sensitive params
   
   const listResponse = await fetch(listUrl);
   if (!listResponse.ok) {
     console.error(`Failed to list blobs. Status: ${listResponse.status}`);
-    console.error(`Response text: ${await listResponse.text()}`);
+    const responseText = await listResponse.text();
+    console.error(`Response text: ${responseText}`);
     throw new Error(`Failed to list blobs: ${listResponse.status}`);
   }
 
@@ -141,7 +156,13 @@ async function loadPasswordDatabase(): Promise<Set<string>> {
   console.log(`Found zip file: ${zipFileName}`);
 
   // Step 2: Download the zip file
-  const zipUrl = `${baseUrl}/${containerName}/${zipFileName}${sasParams}`;
+  let zipUrl;
+  if (sasParams) {
+    zipUrl = `${baseUrl}/${containerName}/${zipFileName}${sasParams}`;
+  } else {
+    zipUrl = `${baseUrl}/${containerName}/${zipFileName}`;
+  }
+  
   console.log(`Downloading zip file...`);
   
   const zipResponse = await fetch(zipUrl);
