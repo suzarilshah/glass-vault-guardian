@@ -6,6 +6,7 @@ import PasswordVault from '@/components/PasswordVault';
 import ApiVault from '@/components/ApiVault';
 import CertificateVault from '@/components/CertificateVault';
 import AuthPage from '@/components/AuthPage';
+import LandingPage from '@/components/LandingPage';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 const Index = () => {
   const { user, loading } = useAuth();
   const [currentView, setCurrentView] = useState<'generator' | 'vault' | 'api-vault' | 'certificate-vault'>('generator');
+  const [showAuth, setShowAuth] = useState(false);
   const [masterPasswords, setMasterPasswords] = useState<{
     unified: string | null;
     password: string | null;
@@ -105,7 +107,10 @@ const Index = () => {
   }
 
   if (!user) {
-    return <AuthPage />;
+    if (showAuth) {
+      return <AuthPage />;
+    }
+    return <LandingPage onShowAuth={() => setShowAuth(true)} />;
   }
 
   return (
