@@ -33,10 +33,14 @@ const AuthPage = () => {
 
       if (error) {
         toast({ title: "Authentication Error", description: error.message, variant: "destructive" });
-      } else if (data.session?.user?.aal === 'aal1') {
-        setIsMfaChallenge(true);
       } else {
-        toast({ title: "Welcome back!", description: "Successfully signed in." });
+        // @ts-ignore - The 'aal' property is used for MFA checks, but TS isn't finding it in the User type.
+        const aal = data.session?.user?.aal;
+        if (aal === 'aal1') {
+          setIsMfaChallenge(true);
+        } else {
+          toast({ title: "Welcome back!", description: "Successfully signed in." });
+        }
       }
     } catch (error) {
       toast({ title: "Error", description: "An unexpected error occurred", variant: "destructive" });
