@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/components/ui/input-otp";
 import { supabase } from '@/integrations/supabase/client';
 import PasswordStrengthIndicator from './vault/PasswordStrengthIndicator';
+import PasswordStrengthBar from './vault/PasswordStrengthBar';
 
 const AuthPage = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -285,8 +286,9 @@ const AuthPage = () => {
                 </div>
                 {isSignUp && password && (
                   <>
-                    <PasswordStrengthIndicator password={password} />
-                    {/* Add extra feedback for unmet requirements, if needed */}
+                    {/* New strength bar, animated */}
+                    <PasswordStrengthBar password={password} />
+                    {/* Add extra feedback for unmet requirements */}
                     {!signUpPasswordValidation.isValid && (
                       <ul className="mt-2 text-xs text-red-400 space-y-1 px-2">
                         {signUpPasswordValidation.errors.map((err, idx) => (
