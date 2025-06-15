@@ -11,7 +11,7 @@ interface AIAnalysisDisplayProps {
     suggestions: string[];
     riskAssessment: string;
     improvements: string[];
-    crossCheck: {
+    crossCheck?: {
       scoreValidation: string;
       entropyValidation: string;
       timeValidation: string;
@@ -73,40 +73,42 @@ const AIAnalysisDisplay: React.FC<AIAnalysisDisplayProps> = ({ analysis, onSaveP
           </div>
         </div>
 
-        {/* AI Cross-Check Validation - Collapsible */}
-        <div className="glass-option p-4 rounded-lg border border-white/10">
-          <Button
-            variant="ghost"
-            onClick={() => setShowCrossCheck(!showCrossCheck)}
-            className="w-full flex items-center justify-between p-0 text-left hover:bg-transparent"
-          >
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-green-400" />
-              <div className="text-sm font-medium text-gray-300">Technical Validation</div>
-            </div>
-            {showCrossCheck ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </Button>
-          
-          {showCrossCheck && (
-            <div className="mt-3 space-y-2">
-              <div className="text-xs text-gray-400 mb-2">{analysis.crossCheck.overallAssessment}</div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
-                <div>
-                  <span className="text-purple-400">Score:</span>
-                  <span className="text-gray-300 ml-1">{analysis.crossCheck.scoreValidation}</span>
-                </div>
-                <div>
-                  <span className="text-blue-400">Entropy:</span>
-                  <span className="text-gray-300 ml-1">{analysis.crossCheck.entropyValidation}</span>
-                </div>
-                <div>
-                  <span className="text-green-400">Time:</span>
-                  <span className="text-gray-300 ml-1">{analysis.crossCheck.timeValidation}</span>
+        {/* AI Cross-Check Validation - Collapsible - Only show if crossCheck exists */}
+        {analysis.crossCheck && (
+          <div className="glass-option p-4 rounded-lg border border-white/10">
+            <Button
+              variant="ghost"
+              onClick={() => setShowCrossCheck(!showCrossCheck)}
+              className="w-full flex items-center justify-between p-0 text-left hover:bg-transparent"
+            >
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-400" />
+                <div className="text-sm font-medium text-gray-300">Technical Validation</div>
+              </div>
+              {showCrossCheck ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </Button>
+            
+            {showCrossCheck && (
+              <div className="mt-3 space-y-2">
+                <div className="text-xs text-gray-400 mb-2">{analysis.crossCheck.overallAssessment}</div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <span className="text-purple-400">Score:</span>
+                    <span className="text-gray-300 ml-1">{analysis.crossCheck.scoreValidation}</span>
+                  </div>
+                  <div>
+                    <span className="text-blue-400">Entropy:</span>
+                    <span className="text-gray-300 ml-1">{analysis.crossCheck.entropyValidation}</span>
+                  </div>
+                  <div>
+                    <span className="text-green-400">Time:</span>
+                    <span className="text-gray-300 ml-1">{analysis.crossCheck.timeValidation}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         {/* Password Suggestions */}
         {analysis.suggestions.length > 0 && (
