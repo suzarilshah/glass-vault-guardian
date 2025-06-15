@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Download, Users, Settings, Lock } from 'lucide-react';
@@ -9,6 +10,8 @@ interface VaultHeaderProps {
   onExportPasswords: () => void;
   onShowForm: () => void;
   onLockVault: () => void;
+  title?: string;
+  addButtonText?: string;
 }
 
 const VaultHeader: React.FC<VaultHeaderProps> = ({
@@ -17,7 +20,9 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({
   onShowGroupManager,
   onExportPasswords,
   onShowForm,
-  onLockVault
+  onLockVault,
+  title = "Password Vault",
+  addButtonText = "Add Password"
 }) => {
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -28,7 +33,7 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({
   return (
     <div className="flex justify-between items-center">
       <div className="flex items-center gap-4">
-        <h2 className="text-2xl font-bold text-white">Password Vault</h2>
+        <h2 className="text-2xl font-bold text-white">{title}</h2>
         <div className="flex items-center gap-2 px-3 py-1 bg-green-600/20 rounded-lg border border-green-500/30">
           <Lock className="w-4 h-4 text-green-400" />
           <span className="text-green-400 text-sm font-medium">
@@ -66,7 +71,7 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({
           className="glass-button bg-green-600 hover:bg-green-700 text-white"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Add Password
+          {addButtonText}
         </Button>
         <Button
           onClick={onLockVault}

@@ -110,6 +110,8 @@ const ApiVault: React.FC<ApiVaultProps> = ({
         onExportPasswords={() => {}} // TODO: Implement export for API keys
         onShowForm={handleShowForm}
         onLockVault={manualLockVault}
+        title="API Vault"
+        addButtonText="Add API Key"
       />
 
       {expiredEntries.length > 0 && (

@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { ApiEntry, ApiFormData } from '@/types/apiVault';
 import { useAuth } from '@/contexts/AuthContext';
@@ -153,20 +152,42 @@ export const useApiVaultOperations = ({
   }, [user, masterPassword, setFormData, setShowForm, fetchEntries, toast, setEditingEntry]);
 
   const editEntry = useCallback(async (entry: ApiEntry) => {
-    setEditingEntry(entry);
-    setFormData({
-      title: entry.title,
-      api_name: entry.api_name || '',
-      api_key: '',
-      api_secret: '',
-      endpoint_url: entry.endpoint_url || '',
-      description: entry.description || '',
-      environment: entry.environment || 'production',
-      group_id: entry.group_id || '',
-      expiration_days: entry.expires_at ? Math.ceil((new Date(entry.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)).toString() : '',
-    });
-    setShowForm(true);
-  }, [setFormData, setShowForm, setEditingEntry]);
+    if (!masterPassword) {
+      toast({
+        title: "Error",
+        description: "Master password is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Decrypt the API key and secret to show in the form
+      const decryptedApiKey = decryptPassword(entry.api_key_encrypted, masterPassword);
+      const decryptedApiSecret = entry.api_secret_encrypted ? decryptPassword(entry.api_secret_encrypted, masterPassword) : '';
+
+      setEditingEntry(entry);
+      setFormData({
+        title: entry.title,
+        api_name: entry.api_name || '',
+        api_key: decryptedApiKey,
+        api_secret: decryptedApiSecret,
+        endpoint_url: entry.endpoint_url || '',
+        description: entry.description || '',
+        environment: entry.environment || 'production',
+        group_id: entry.group_id || '',
+        expiration_days: entry.expires_at ? Math.ceil((new Date(entry.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)).toString() : '',
+      });
+      setShowForm(true);
+    } catch (error) {
+      console.error('Error decrypting API entry:', error);
+      toast({
+        title: "Error",
+        description: "Failed to decrypt API entry. Please check your master password.",
+        variant: "destructive",
+      });
+    }
+  }, [setFormData, setShowForm, setEditingEntry, masterPassword, toast]);
 
   const deleteEntry = useCallback(async (entryId: string) => {
     if (!user) return;
