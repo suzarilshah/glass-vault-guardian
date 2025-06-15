@@ -1,4 +1,6 @@
 
+import { checkPasswordBreachOnline } from './breachCheckerOnline';
+
 // Top 1000 most common passwords from various breach datasets
 const COMMON_PASSWORDS = [
   "123456", "password", "12345678", "qwerty", "123456789", "12345", "1234",
@@ -80,16 +82,21 @@ const COMMON_PASSWORDS = [
 // Convert to Set for O(1) lookup
 const COMMON_PASSWORDS_SET = new Set(COMMON_PASSWORDS);
 
-export const checkPasswordBreach = (password: string): {
+// Local fallback breach checking function
+const checkPasswordBreachLocal = (password: string): {
   isBreached: boolean;
   severity: 'low' | 'medium' | 'high';
   message: string;
+  source: 'local';
+  passwordsChecked: number;
 } => {
   if (!password) {
     return {
       isBreached: false,
       severity: 'low',
-      message: 'Enter a password to check'
+      message: 'Enter a password to check',
+      source: 'local',
+      passwordsChecked: COMMON_PASSWORDS.length
     };
   }
 
@@ -100,7 +107,9 @@ export const checkPasswordBreach = (password: string): {
     return {
       isBreached: true,
       severity: 'high',
-      message: 'This password appears in common password lists and has likely been breached'
+      message: 'This password appears in common password lists and has likely been breached',
+      source: 'local',
+      passwordsChecked: COMMON_PASSWORDS.length
     };
   }
 
@@ -109,7 +118,9 @@ export const checkPasswordBreach = (password: string): {
     return {
       isBreached: true,
       severity: 'medium',
-      message: 'Password is too short and easily crackable'
+      message: 'Password is too short and easily crackable',
+      source: 'local',
+      passwordsChecked: COMMON_PASSWORDS.length
     };
   }
 
@@ -122,14 +133,55 @@ export const checkPasswordBreach = (password: string): {
     return {
       isBreached: true,
       severity: 'medium',
-      message: 'Password uses common keyboard patterns and is easily guessable'
+      message: 'Password uses common keyboard patterns and is easily guessable',
+      source: 'local',
+      passwordsChecked: COMMON_PASSWORDS.length
     };
   }
 
   return {
     isBreached: false,
     severity: 'low',
-    message: 'Password does not appear in common breach lists'
+    message: 'Password does not appear in common breach lists',
+    source: 'local',
+    passwordsChecked: COMMON_PASSWORDS.length
+  };
+};
+
+// Hybrid breach checking (online first, then local fallback)
+export const checkPasswordBreach = async (password: string): Promise<{
+  isBreached: boolean;
+  severity: 'low' | 'medium' | 'high';
+  message: string;
+  source: 'azure' | 'local';
+  passwordsChecked: number;
+  isLoading?: boolean;
+}> => {
+  try {
+    // Try online check first
+    const onlineResult = await checkPasswordBreachOnline(password);
+    return {
+      ...onlineResult,
+      passwordsChecked: onlineResult.passwordsChecked || 14000000
+    };
+  } catch (error) {
+    console.warn('Falling back to local breach check:', error);
+    // Fallback to local check
+    return checkPasswordBreachLocal(password);
+  }
+};
+
+// Synchronous version for backward compatibility
+export const checkPasswordBreachSync = (password: string): {
+  isBreached: boolean;
+  severity: 'low' | 'medium' | 'high';
+  message: string;
+} => {
+  const result = checkPasswordBreachLocal(password);
+  return {
+    isBreached: result.isBreached,
+    severity: result.severity,
+    message: result.message
   };
 };
 
