@@ -11,6 +11,9 @@ import { useToast } from '@/hooks/use-toast';
 import ConfirmationDialog from '@/components/vault/ConfirmationDialog';
 import AdvancedPasswordStrengthIndicator from '@/components/vault/AdvancedPasswordStrengthIndicator';
 import { analyzePasswordStrength } from '@/utils/passwordStrength';
+import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/components/ui/input-otp";
+import { ShieldCheck } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
@@ -35,10 +38,27 @@ const ProfilePage = () => {
   const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
   const [showPasswordSection, setShowPasswordSection] = useState(false);
   const [showMasterPasswordSection, setShowMasterPasswordSection] = useState(false);
+  const [tfaSetupInfo, setTfaSetupInfo] = useState<{qrCode: string, secret: string, factorId: string} | null>(null);
+  const [tfaVerificationCode, setTfaVerificationCode] = useState('');
+  const [isTfaEnabled, setIsTfaEnabled] = useState(false);
+  const [isTfaLoading, setIsTfaLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
       fetchProfile();
+      const checkTfa = async () => {
+        setIsTfaLoading(true);
+        const { data, error } = await supabase.auth.mfa.listFactors();
+        if (error) {
+            console.error('Error listing MFA factors:', error);
+            toast({ title: 'Error', description: 'Could not fetch 2FA status.', variant: 'destructive' });
+        } else {
+            const isEnabled = data.totp.some(factor => factor.status === 'verified');
+            setIsTfaEnabled(isEnabled);
+        }
+        setIsTfaLoading(false);
+      }
+      checkTfa();
     }
   }, [user]);
 
@@ -281,6 +301,70 @@ const ProfilePage = () => {
       });
     }
   };
+  
+  const handleEnableTfa = async () => {
+    const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp' });
+    if (error) {
+        toast({ title: 'Error enabling 2FA', description: error.message, variant: 'destructive' });
+        return;
+    }
+    if (data) {
+        setTfaSetupInfo({
+            qrCode: data.totp.qr_code,
+            secret: data.totp.secret,
+            factorId: data.id
+        });
+    }
+  };
+
+  const handleVerifyTfa = async () => {
+      if (!tfaSetupInfo) return;
+      const { error } = await supabase.auth.mfa.challengeAndVerify({
+          factorId: tfaSetupInfo.factorId,
+          code: tfaVerificationCode
+      });
+
+      if (error) {
+          toast({ title: 'Error verifying 2FA code', description: error.message, variant: 'destructive' });
+      } else {
+          toast({ title: 'Success', description: '2FA has been enabled.' });
+          setIsTfaEnabled(true);
+          setTfaSetupInfo(null);
+          setTfaVerificationCode('');
+          // Re-check factors
+          const { data } = await supabase.auth.mfa.listFactors();
+          const isEnabled = data?.totp.some(factor => factor.status === 'verified');
+          setIsTfaEnabled(isEnabled ?? false);
+      }
+  };
+  
+  const handleCancelTfaSetup = () => {
+    setTfaSetupInfo(null);
+    setTfaVerificationCode('');
+  }
+
+  const handleDisableTfa = async () => {
+      const { data, error: listError } = await supabase.auth.mfa.listFactors();
+      if (listError || !data) {
+          toast({ title: 'Error', description: 'Could not fetch 2FA factors.', variant: 'destructive' });
+          return;
+      }
+
+      const totpFactor = data.totp.find(f => f.status === 'verified');
+      if (!totpFactor) {
+          toast({ title: 'Error', description: 'No verified 2FA method found.', variant: 'destructive' });
+          return;
+      }
+
+      const { error } = await supabase.auth.mfa.unenroll({ factorId: totpFactor.id });
+
+      if (error) {
+          toast({ title: 'Error disabling 2FA', description: error.message, variant: 'destructive' });
+      } else {
+          toast({ title: 'Success', description: '2FA has been disabled.' });
+          setIsTfaEnabled(false);
+      }
+  };
 
   const handleDeactivateAccount = async () => {
     if (!user) return;
@@ -514,6 +598,73 @@ const ProfilePage = () => {
                 >
                   Update Master Password
                 </Button>
+              </div>
+            )}
+          </Card>
+
+          {/* Two-Factor Authentication Section */}
+          <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
+            <div className="flex items-center gap-2 mb-4">
+              <ShieldCheck className="w-5 h-5 text-white" />
+              <h2 className="text-xl font-semibold text-white">Two-Factor Authentication (2FA)</h2>
+            </div>
+            
+            {isTfaLoading ? (
+              <Skeleton className="h-10 w-40 rounded-md bg-white/10" />
+            ) : isTfaEnabled ? (
+              <div>
+                <p className="text-green-400 mb-4">2FA is currently enabled.</p>
+                <Button
+                  onClick={handleDisableTfa}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Disable 2FA
+                </Button>
+              </div>
+            ) : (
+              <div>
+                {tfaSetupInfo ? (
+                  <div className="space-y-4">
+                    <p className="text-gray-300">Scan this QR code with your authenticator app (e.g., Google Authenticator, Authy).</p>
+                    <div className="bg-white p-2 rounded-lg inline-block">
+                      <img src={tfaSetupInfo.qrCode} alt="2FA QR Code" />
+                    </div>
+                    <p className="text-gray-300 text-sm">Or manually enter this setup key:</p>
+                    <code className="bg-gray-800 text-green-400 p-2 rounded-md block break-all">{tfaSetupInfo.secret}</code>
+
+                    <div>
+                      <Label htmlFor="tfa-code" className="text-gray-300">Verification Code</Label>
+                      <InputOTP id="tfa-code" maxLength={6} value={tfaVerificationCode} onChange={setTfaVerificationCode}>
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} />
+                          <InputOTPSlot index={1} />
+                          <InputOTPSlot index={2} />
+                        </InputOTPGroup>
+                        <InputOTPSeparator />
+                        <InputOTPGroup>
+                          <InputOTPSlot index={3} />
+                          <InputOTPSlot index={4} />
+                          <InputOTPSlot index={5} />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button onClick={handleVerifyTfa} className="bg-green-600 hover:bg-green-700 text-white">Verify and Enable</Button>
+                      <Button onClick={handleCancelTfaSetup} variant="outline" className="bg-transparent border-gray-400 text-gray-300 hover:bg-gray-700">Cancel</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-gray-300 mb-4">Add an extra layer of security to your account.</p>
+                    <Button
+                      onClick={handleEnableTfa}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      Enable 2FA
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </Card>
