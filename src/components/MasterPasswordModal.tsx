@@ -140,7 +140,7 @@ const MasterPasswordModal: React.FC<MasterPasswordModalProps> = ({
               type="button"
               variant="outline"
               onClick={onClose}
-              className="flex-1 border-white/20 text-gray-300 hover:bg-gray-700"
+              className="flex-1 bg-white border-2 border-blue-400 text-blue-500 hover:bg-blue-50 hover:border-blue-500"
               disabled={isLoading}
             >
               Cancel
