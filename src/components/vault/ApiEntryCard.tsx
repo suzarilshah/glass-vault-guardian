@@ -38,7 +38,7 @@ const ApiEntryCard: React.FC<ApiEntryCardProps> = ({
   };
 
   const getServiceIcon = (apiName?: string) => {
-    if (!apiName) return <Key className="w-5 h-5" />;
+    if (!apiName) return <Key className="w-5 h-5 text-white" />;
     
     const name = apiName.toLowerCase();
     if (name.includes('openai')) return <div className="w-5 h-5 bg-green-500 rounded" />;
@@ -47,7 +47,7 @@ const ApiEntryCard: React.FC<ApiEntryCardProps> = ({
     if (name.includes('google')) return <div className="w-5 h-5 bg-blue-500 rounded" />;
     if (name.includes('github')) return <div className="w-5 h-5 bg-gray-800 rounded" />;
     
-    return <Key className="w-5 h-5" />;
+    return <Key className="w-5 h-5 text-white" />;
   };
 
   return (

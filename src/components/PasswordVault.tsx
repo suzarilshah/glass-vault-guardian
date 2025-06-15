@@ -9,6 +9,7 @@ import PasswordEntryCard from './vault/PasswordEntryCard';
 import PasswordForm from './vault/PasswordForm';
 import EmptyState from './vault/EmptyState';
 import { usePasswordVault } from '@/hooks/usePasswordVault';
+import { usePasswordVaultImport } from '@/hooks/usePasswordVaultImport';
 import VaultLockedScreen from './vault/VaultLockedScreen';
 
 interface PasswordVaultProps {
@@ -56,7 +57,13 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
     ungroupedCount,
     handleShowForm,
     manualLockVault,
+    fetchEntries,
   } = usePasswordVault({ masterPassword: propMasterPassword, onMasterPasswordSet });
+
+  const { downloadTemplate, importData } = usePasswordVaultImport({
+    masterPassword,
+    fetchEntries,
+  });
 
   if (!masterPassword) {
     return (
@@ -96,6 +103,8 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
           // Manual lock vault
           if (onMasterPasswordSet) onMasterPasswordSet(null);
         }}
+        onImportData={importData}
+        onDownloadTemplate={downloadTemplate}
       />
 
       {showTimerSettings && (

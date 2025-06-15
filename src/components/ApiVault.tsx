@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useApiVault } from '@/hooks/useApiVault';
 import VaultLockedScreen from '@/components/vault/VaultLockedScreen';
@@ -12,6 +13,7 @@ import TimerSettings from '@/components/vault/TimerSettings';
 import ConfirmationDialog from '@/components/vault/ConfirmationDialog';
 import ApiHistory from '@/components/vault/ApiHistory';
 import { useVaultTimer } from '@/hooks/useVaultTimer';
+import { useApiVaultImport } from '@/hooks/useApiVaultImport';
 import { useState } from 'react';
 
 interface ApiVaultProps {
@@ -69,6 +71,17 @@ const ApiVault: React.FC<ApiVaultProps> = ({
     onMasterPasswordSet,
   });
 
+  const { downloadTemplate, importData } = useApiVaultImport({
+    masterPassword,
+    fetchEntries: () => {
+      // Refetch entries after import
+      if (masterPassword) {
+        // This will trigger the useEffect in useApiVault to refetch
+        setMasterPassword(masterPassword);
+      }
+    },
+  });
+
   const handleMasterPasswordSubmit = async (password: string) => {
     setMasterPassword(password);
     onMasterPasswordSet(password);
@@ -110,6 +123,8 @@ const ApiVault: React.FC<ApiVaultProps> = ({
         onExportPasswords={() => {}} // TODO: Implement export for API keys
         onShowForm={handleShowForm}
         onLockVault={manualLockVault}
+        onImportData={importData}
+        onDownloadTemplate={downloadTemplate}
         title="API Vault"
         addButtonText="Add API Key"
       />

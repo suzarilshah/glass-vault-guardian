@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Download, Users, Settings, Lock } from 'lucide-react';
+import { Plus, Download, Users, Settings, Lock, Upload, FileText } from 'lucide-react';
 
 interface VaultHeaderProps {
   remainingTime: number;
@@ -10,6 +10,8 @@ interface VaultHeaderProps {
   onExportPasswords: () => void;
   onShowForm: () => void;
   onLockVault: () => void;
+  onImportData?: () => void;
+  onDownloadTemplate?: () => void;
   title?: string;
   addButtonText?: string;
 }
@@ -21,6 +23,8 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({
   onExportPasswords,
   onShowForm,
   onLockVault,
+  onImportData,
+  onDownloadTemplate,
   title = "Password Vault",
   addButtonText = "Add Password"
 }) => {
@@ -58,6 +62,26 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({
           <Users className="w-4 h-4 mr-2" />
           Manage Groups
         </Button>
+        {onDownloadTemplate && (
+          <Button
+            onClick={onDownloadTemplate}
+            variant="outline"
+            className="bg-purple-100 text-purple-700 border-purple-300 hover:bg-purple-200 hover:text-purple-900 border font-semibold"
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Template
+          </Button>
+        )}
+        {onImportData && (
+          <Button
+            onClick={onImportData}
+            variant="outline"
+            className="bg-orange-100 text-orange-700 border-orange-300 hover:bg-orange-200 hover:text-orange-900 border font-semibold"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Import
+          </Button>
+        )}
         <Button
           onClick={onExportPasswords}
           variant="outline"
