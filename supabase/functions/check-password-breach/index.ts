@@ -1,4 +1,5 @@
 
+
 import { corsHeaders } from '../_shared/cors.ts';
 
 interface PasswordCheckRequest {
@@ -101,7 +102,7 @@ async function loadPasswordDatabase(): Promise<Set<string>> {
   
   console.log(`Base URL: ${baseUrl}`);
   console.log(`Container: ${containerName}`);
-  console.log(`SAS params length: ${sasParams.length}`);
+  console.log(`SAS params present: ${sasParams ? 'Yes' : 'No'}`);
 
   // Step 1: List blobs to find rockyou2024.zip
   console.log('Listing blobs in container...');
@@ -109,18 +110,18 @@ async function loadPasswordDatabase(): Promise<Set<string>> {
   // Construct the proper Azure Blob Storage list URL
   const listUrl = `${baseUrl}/${containerName}?restype=container&comp=list&${sasParams.substring(1)}`;
   
-  console.log(`List URL (masked): ${listUrl.replace(/([?&])(sig|st|se|spr|sp|sv)=[^&]*/g, '$1$2=***')}`);
+  console.log(`List URL constructed (params masked)`);
   
   const listResponse = await fetch(listUrl);
   if (!listResponse.ok) {
     console.error(`Failed to list blobs. Status: ${listResponse.status}`);
     const responseText = await listResponse.text();
-    console.error(`Response text: ${responseText}`);
-    throw new Error(`Failed to list blobs: ${listResponse.status}`);
+    console.error(`Response: ${responseText.substring(0, 500)}`);
+    throw new Error(`Failed to list blobs: ${listResponse.status} - ${listResponse.statusText}`);
   }
 
   const xmlText = await listResponse.text();
-  console.log('Blob listing received, parsing...');
+  console.log('Blob listing received, parsing XML...');
 
   // Find rockyou2024.zip blob
   const nameMatch = xmlText.match(/<Name>([^<]*rockyou2024[^<]*\.zip)<\/Name>/i);
@@ -128,7 +129,12 @@ async function loadPasswordDatabase(): Promise<Set<string>> {
     console.error('Available blobs:');
     const allNames = xmlText.match(/<Name>([^<]+)<\/Name>/g);
     if (allNames) {
-      allNames.forEach(name => console.log(`  - ${name.replace(/<\/?Name>/g, '')}`));
+      allNames.slice(0, 10).forEach(name => console.log(`  - ${name.replace(/<\/?Name>/g, '')}`));
+      if (allNames.length > 10) {
+        console.log(`  ... and ${allNames.length - 10} more files`);
+      }
+    } else {
+      console.log('  No files found in container');
     }
     throw new Error('rockyou2024.zip file not found in Azure container');
   }
@@ -139,16 +145,18 @@ async function loadPasswordDatabase(): Promise<Set<string>> {
   // Step 2: Download the zip file
   const zipUrl = `${baseUrl}/${containerName}/${zipFileName}${sasParams}`;
   
-  console.log(`Downloading zip file...`);
+  console.log(`Downloading zip file from Azure...`);
   
   const zipResponse = await fetch(zipUrl);
   if (!zipResponse.ok) {
     console.error(`Failed to download zip file. Status: ${zipResponse.status}`);
-    throw new Error(`Failed to download zip file: ${zipResponse.status}`);
+    const responseText = await zipResponse.text();
+    console.error(`Download error response: ${responseText.substring(0, 200)}`);
+    throw new Error(`Failed to download zip file: ${zipResponse.status} - ${zipResponse.statusText}`);
   }
 
   const zipArrayBuffer = await zipResponse.arrayBuffer();
-  console.log(`Downloaded ${zipArrayBuffer.byteLength} bytes`);
+  console.log(`Downloaded ${zipArrayBuffer.byteLength} bytes successfully`);
 
   // Step 3: Extract and parse the zip file
   const passwordSet = new Set<string>();
@@ -168,7 +176,7 @@ async function loadPasswordDatabase(): Promise<Set<string>> {
     }
 
     if (eocdOffset === -1) {
-      throw new Error('Invalid ZIP file: EOCD not found');
+      throw new Error('Invalid ZIP file: End of Central Directory record not found');
     }
 
     // Read central directory offset
@@ -188,16 +196,21 @@ async function loadPasswordDatabase(): Promise<Set<string>> {
         const compressedSize = new DataView(zipData.buffer).getUint32(currentOffset + 20, true);
         const compressionMethod = new DataView(zipData.buffer).getUint16(currentOffset + 10, true);
         
+        console.log(`Processing file with compression method: ${compressionMethod}, size: ${compressedSize}`);
+        
         let fileData: Uint8Array;
         const dataStart = localHeaderOffset + localHeaderSize;
         
         if (compressionMethod === 0) {
           // No compression
           fileData = zipData.slice(dataStart, dataStart + compressedSize);
+          console.log('File is uncompressed');
         } else {
           // Handle compression (basic deflate)
+          console.log('Decompressing file data...');
           const compressedData = zipData.slice(dataStart, dataStart + compressedSize);
           fileData = await decompressData(compressedData);
+          console.log(`Decompressed to ${fileData.length} bytes`);
         }
         
         // Convert to text and split into lines
@@ -205,15 +218,18 @@ async function loadPasswordDatabase(): Promise<Set<string>> {
         const text = decoder.decode(fileData);
         const lines = text.split('\n');
         
-        console.log(`Processing ${lines.length} passwords...`);
+        console.log(`Processing ${lines.length} passwords from rockyou2024.zip...`);
         
+        let processedCount = 0;
         for (const line of lines) {
           const password = line.trim();
           if (password && password.length > 0) {
             passwordSet.add(password.toLowerCase());
+            processedCount++;
           }
         }
         
+        console.log(`Successfully processed ${processedCount} passwords`);
         break; // Process only the first file
       }
       
@@ -225,38 +241,44 @@ async function loadPasswordDatabase(): Promise<Set<string>> {
     throw new Error(`Failed to extract passwords from ZIP: ${error.message}`);
   }
 
-  console.log(`Loaded ${passwordSet.size} unique passwords from rockyou2024.zip`);
+  console.log(`Successfully loaded ${passwordSet.size} unique passwords from rockyou2024.zip`);
   return passwordSet;
 }
 
 async function decompressData(compressedData: Uint8Array): Promise<Uint8Array> {
-  // Use the built-in compression API
-  const stream = new DecompressionStream('deflate-raw');
-  const writer = stream.writable.getWriter();
-  const reader = stream.readable.getReader();
-  
-  // Write compressed data
-  await writer.write(compressedData);
-  await writer.close();
-  
-  // Read decompressed data
-  const chunks: Uint8Array[] = [];
-  let result = await reader.read();
-  
-  while (!result.done) {
-    chunks.push(result.value);
-    result = await reader.read();
+  try {
+    // Use the built-in compression API
+    const stream = new DecompressionStream('deflate-raw');
+    const writer = stream.writable.getWriter();
+    const reader = stream.readable.getReader();
+    
+    // Write compressed data
+    await writer.write(compressedData);
+    await writer.close();
+    
+    // Read decompressed data
+    const chunks: Uint8Array[] = [];
+    let result = await reader.read();
+    
+    while (!result.done) {
+      chunks.push(result.value);
+      result = await reader.read();
+    }
+    
+    // Combine chunks
+    const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+    const decompressed = new Uint8Array(totalLength);
+    let offset = 0;
+    
+    for (const chunk of chunks) {
+      decompressed.set(chunk, offset);
+      offset += chunk.length;
+    }
+    
+    return decompressed;
+  } catch (error) {
+    console.error('Decompression failed:', error);
+    throw new Error(`Failed to decompress data: ${error.message}`);
   }
-  
-  // Combine chunks
-  const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
-  const decompressed = new Uint8Array(totalLength);
-  let offset = 0;
-  
-  for (const chunk of chunks) {
-    decompressed.set(chunk, offset);
-    offset += chunk.length;
-  }
-  
-  return decompressed;
 }
+
