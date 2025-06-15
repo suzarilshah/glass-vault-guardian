@@ -1,10 +1,16 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Shield, Key, FileText, Lock, User, LogOut, Menu, X } from 'lucide-react';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Shield, Key, FileText, Lock, User, LogOut, Menu, X, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface NavbarProps {
   onShowVault: () => void;
@@ -21,6 +27,7 @@ const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const { signOut, user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -43,6 +50,10 @@ const Navbar: React.FC<NavbarProps> = ({
 
   const getUserEmail = () => {
     return user?.email || 'User';
+  };
+
+  const handleProfileClick = () => {
+    navigate('/profile');
   };
 
   return (
@@ -108,24 +119,37 @@ const Navbar: React.FC<NavbarProps> = ({
 
           {/* User Menu */}
           <div className="hidden md:flex items-center gap-4">
-            <Link to="/profile">
-              <Button
-                variant="ghost"
-                className="text-gray-300 hover:text-white hover:bg-gray-700"
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="text-gray-300 hover:text-white hover:bg-gray-700"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  {getUserEmail()}
+                  <ChevronDown className="w-4 h-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent 
+                align="end" 
+                className="w-56 bg-gray-800 border-gray-700"
               >
-                <User className="w-4 h-4 mr-2" />
-                {getUserEmail()}
-              </Button>
-            </Link>
-            
-            <Button
-              onClick={handleSignOut}
-              variant="ghost"
-              className="text-gray-300 hover:text-white hover:bg-gray-700"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
-            </Button>
+                <DropdownMenuItem 
+                  onClick={handleProfileClick}
+                  className="text-gray-300 hover:text-white hover:bg-gray-700 cursor-pointer"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  User Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={handleSignOut}
+                  className="text-gray-300 hover:text-white hover:bg-gray-700 cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Mobile Menu Button */}
@@ -202,16 +226,17 @@ const Navbar: React.FC<NavbarProps> = ({
             </Button>
             
             <div className="border-t border-white/10 pt-2 mt-2">
-              <Link to="/profile">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <User className="w-4 h-4 mr-2" />
-                  {getUserEmail()}
-                </Button>
-              </Link>
+              <Button
+                onClick={() => {
+                  handleProfileClick();
+                  setIsMenuOpen(false);
+                }}
+                variant="ghost"
+                className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700"
+              >
+                <User className="w-4 h-4 mr-2" />
+                User Profile
+              </Button>
               
               <Button
                 onClick={() => {
