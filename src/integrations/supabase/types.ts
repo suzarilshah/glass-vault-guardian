@@ -408,21 +408,27 @@ export type Database = {
           id: string
           master_password_hash: string
           updated_at: string
+          use_unified_password: boolean | null
           user_id: string
+          vault_type: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           master_password_hash: string
           updated_at?: string
+          use_unified_password?: boolean | null
           user_id: string
+          vault_type?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           master_password_hash?: string
           updated_at?: string
+          use_unified_password?: boolean | null
           user_id?: string
+          vault_type?: string | null
         }
         Relationships: []
       }

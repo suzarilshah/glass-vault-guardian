@@ -41,7 +41,7 @@ const Index = () => {
         .select('use_unified_password')
         .eq('user_id', user.id)
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (!error && data) {
         setUseUnifiedPassword(data.use_unified_password);

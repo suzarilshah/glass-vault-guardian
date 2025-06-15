@@ -55,7 +55,7 @@ export const useVaultAuth = ({
         .select('master_password_hash, use_unified_password')
         .eq('user_id', user?.id)
         .eq('use_unified_password', true)
-        .single();
+        .maybeSingle();
 
       if (!unifiedError && unifiedData) {
         // User has unified password, check against it
@@ -77,7 +77,7 @@ export const useVaultAuth = ({
           .eq('user_id', user?.id)
           .eq('vault_type', vaultType)
           .eq('use_unified_password', false)
-          .single();
+          .maybeSingle();
 
         if (!error && data && data.master_password_hash === hashedPassword) {
           setMasterPassword(password);
