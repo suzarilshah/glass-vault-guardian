@@ -1,4 +1,3 @@
-
 import React from 'react';
 import GroupManager from './GroupManager';
 import VaultHeader from './vault/VaultHeader';
@@ -99,12 +98,11 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
         onShowGroupManager={() => setShowGroupManager(true)}
         onExportPasswords={exportPasswords}
         onShowForm={handleShowForm}
-        onLockVault={() => {
-          // Manual lock vault
-          if (onMasterPasswordSet) onMasterPasswordSet(null);
-        }}
+        onLockVault={manualLockVault}
         onImportData={importData}
         onDownloadTemplate={downloadTemplate}
+        lockTimeoutMinutes={lockTimeoutMinutes}
+        onTimeoutChange={handleTimeoutChange}
       />
 
       {showTimerSettings && (

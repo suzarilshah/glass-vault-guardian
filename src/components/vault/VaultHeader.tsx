@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Download, Users, Settings, Lock, Upload, FileText } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface VaultHeaderProps {
   remainingTime: number;
@@ -14,6 +15,8 @@ interface VaultHeaderProps {
   onDownloadTemplate?: () => void;
   title?: string;
   addButtonText?: string;
+  lockTimeoutMinutes?: number;
+  onTimeoutChange?: (minutes: number) => void;
 }
 
 const VaultHeader: React.FC<VaultHeaderProps> = ({
@@ -26,12 +29,22 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({
   onImportData,
   onDownloadTemplate,
   title = "Password Vault",
-  addButtonText = "Add Password"
+  addButtonText = "Add Password",
+  lockTimeoutMinutes = 5,
+  onTimeoutChange
 }) => {
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleTimeoutChange = (value: string) => {
+    if (value === 'lock_now') {
+      onLockVault();
+    } else if (onTimeoutChange) {
+      onTimeoutChange(parseInt(value));
+    }
   };
 
   return (
@@ -44,46 +57,26 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({
             <span className="text-green-400 text-sm font-medium">
               Auto-lock: {formatTime(remainingTime)}
             </span>
+            <Select value={lockTimeoutMinutes.toString()} onValueChange={handleTimeoutChange}>
+              <SelectTrigger className="w-20 h-6 text-xs glass-input bg-green-600/20 border-green-500/30 text-green-400">
+                <Settings className="w-3 h-3" />
+              </SelectTrigger>
+              <SelectContent className="glass-card bg-gray-800 backdrop-blur-xl border-white/20">
+                <SelectItem value="1" className="text-white hover:bg-white/10">1 min</SelectItem>
+                <SelectItem value="5" className="text-white hover:bg-white/10">5 min</SelectItem>
+                <SelectItem value="10" className="text-white hover:bg-white/10">10 min</SelectItem>
+                <SelectItem value="15" className="text-white hover:bg-white/10">15 min</SelectItem>
+                <SelectItem value="30" className="text-white hover:bg-white/10">30 min</SelectItem>
+                <SelectItem value="60" className="text-white hover:bg-white/10">1 hour</SelectItem>
+                <SelectItem value="lock_now" className="text-red-400 hover:bg-red-500/10">Lock Now</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
       
-      <div className="space-y-2">
-        {/* First line of buttons */}
-        <div className="flex gap-2 flex-wrap">
-          <Button
-            onClick={onShowForm}
-            className="glass-button bg-green-600 hover:bg-green-700 text-white"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            {addButtonText}
-          </Button>
-          <Button
-            onClick={onShowGroupManager}
-            variant="outline"
-            className="bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200 hover:text-blue-900 border font-semibold"
-          >
-            <Users className="w-4 h-4 mr-2" />
-            Manage Groups
-          </Button>
-          <Button
-            onClick={onLockVault}
-            className="bg-red-600 hover:bg-red-700 text-white font-semibold border border-red-300"
-          >
-            <Lock className="w-4 h-4 mr-2" />
-            Manual Lock
-          </Button>
-          <Button
-            onClick={onShowTimerSettings}
-            variant="outline"
-            className="bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200 hover:text-blue-900 border font-semibold"
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            Timer
-          </Button>
-        </div>
-
-        {/* Second line of buttons */}
+      <div className="flex justify-between items-start gap-4">
+        {/* Left side buttons */}
         <div className="flex gap-2 flex-wrap">
           {onDownloadTemplate && (
             <Button
@@ -112,6 +105,25 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({
           >
             <Download className="w-4 h-4 mr-2" />
             Export
+          </Button>
+        </div>
+
+        {/* Right side buttons */}
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            onClick={onShowForm}
+            className="glass-button bg-green-600 hover:bg-green-700 text-white"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            {addButtonText}
+          </Button>
+          <Button
+            onClick={onShowGroupManager}
+            variant="outline"
+            className="bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200 hover:text-blue-900 border font-semibold"
+          >
+            <Users className="w-4 h-4 mr-2" />
+            Manage Groups
           </Button>
         </div>
       </div>

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useApiVault } from '@/hooks/useApiVault';
 import VaultLockedScreen from '@/components/vault/VaultLockedScreen';
@@ -127,6 +126,8 @@ const ApiVault: React.FC<ApiVaultProps> = ({
         onDownloadTemplate={downloadTemplate}
         title="API Vault"
         addButtonText="Add API Key"
+        lockTimeoutMinutes={lockTimeoutMinutes}
+        onTimeoutChange={handleTimeoutChange}
       />
 
       {expiredEntries.length > 0 && (
