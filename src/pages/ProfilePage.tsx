@@ -9,6 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import ConfirmationDialog from '@/components/vault/ConfirmationDialog';
+import AdvancedPasswordStrengthIndicator from '@/components/vault/AdvancedPasswordStrengthIndicator';
+import { analyzePasswordStrength } from '@/utils/passwordStrength';
 
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
@@ -73,6 +75,53 @@ const ProfilePage = () => {
     }
   };
 
+  const validatePassword = (password: string, firstName: string = '', lastName: string = '') => {
+    const errors = [];
+    
+    // Check length
+    if (password.length <= 10) {
+      errors.push('Password must be more than 10 characters');
+    }
+    
+    // Check for uppercase
+    if (!/[A-Z]/.test(password)) {
+      errors.push('Password must contain at least one uppercase letter');
+    }
+    
+    // Check for lowercase
+    if (!/[a-z]/.test(password)) {
+      errors.push('Password must contain at least one lowercase letter');
+    }
+    
+    // Check for special characters
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\?]/.test(password)) {
+      errors.push('Password must contain at least one special character');
+    }
+    
+    // Check for alphanumeric (numbers)
+    if (!/[0-9]/.test(password)) {
+      errors.push('Password must contain at least one number');
+    }
+    
+    // Check for personal names
+    const lowerPassword = password.toLowerCase();
+    const lowerFirstName = firstName.toLowerCase();
+    const lowerLastName = lastName.toLowerCase();
+    
+    if (lowerFirstName && lowerPassword.includes(lowerFirstName)) {
+      errors.push('Password should not contain your first name');
+    }
+    
+    if (lowerLastName && lowerPassword.includes(lowerLastName)) {
+      errors.push('Password should not contain your last name');
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
+
   const handleSave = async () => {
     if (!user) return;
 
@@ -115,6 +164,17 @@ const ProfilePage = () => {
   };
 
   const handlePasswordChange = async () => {
+    const validation = validatePassword(passwordData.newPassword, profile.first_name, profile.last_name);
+    
+    if (!validation.isValid) {
+      toast({
+        title: "Password Validation Failed",
+        description: validation.errors.join('. '),
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast({
         title: "Error",
@@ -124,10 +184,11 @@ const ProfilePage = () => {
       return;
     }
 
-    if (passwordData.newPassword.length < 6) {
+    const strengthResult = analyzePasswordStrength(passwordData.newPassword);
+    if (strengthResult.isWeak) {
       toast({
-        title: "Error",
-        description: "Password must be at least 6 characters long",
+        title: "Weak Password",
+        description: "Please choose a stronger password",
         variant: "destructive"
       });
       return;
@@ -168,6 +229,17 @@ const ProfilePage = () => {
   };
 
   const handleMasterPasswordChange = async () => {
+    const validation = validatePassword(masterPasswordData.newMasterPassword, profile.first_name, profile.last_name);
+    
+    if (!validation.isValid) {
+      toast({
+        title: "Master Password Validation Failed",
+        description: validation.errors.join('. '),
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (masterPasswordData.newMasterPassword !== masterPasswordData.confirmMasterPassword) {
       toast({
         title: "Error",
@@ -177,10 +249,11 @@ const ProfilePage = () => {
       return;
     }
 
-    if (masterPasswordData.newMasterPassword.length < 8) {
+    const strengthResult = analyzePasswordStrength(masterPasswordData.newMasterPassword);
+    if (strengthResult.isWeak) {
       toast({
-        title: "Error",
-        description: "Master password must be at least 8 characters long",
+        title: "Weak Master Password",
+        description: "Please choose a stronger master password",
         variant: "destructive"
       });
       return;
@@ -258,7 +331,7 @@ const ProfilePage = () => {
             onClick={() => navigate('/')}
             variant="outline"
             size="sm"
-            className="border-green-500/30 text-green-400 hover:bg-green-500/10 hover:border-green-400"
+            className="bg-white border-blue-400 text-blue-600 hover:bg-blue-50 hover:text-blue-700 border font-semibold"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Vault
@@ -267,6 +340,7 @@ const ProfilePage = () => {
         </div>
 
         <div className="space-y-6">
+          {/* Personal Information Card */}
           <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
             <div className="flex items-center gap-2 mb-4">
               <User className="w-5 h-5 text-white" />
@@ -334,7 +408,7 @@ const ProfilePage = () => {
                 onClick={() => setShowPasswordSection(!showPasswordSection)}
                 variant="outline"
                 size="sm"
-                className="border-green-500/30 text-green-400 hover:bg-green-500/10"
+                className="bg-white border-blue-400 text-blue-600 hover:bg-blue-50 hover:text-blue-700 border font-semibold"
               >
                 {showPasswordSection ? 'Cancel' : 'Change Password'}
               </Button>
@@ -351,6 +425,10 @@ const ProfilePage = () => {
                     onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
                     className="glass-input bg-white/5 border-white/20 text-white"
                     placeholder="Enter new password"
+                  />
+                  <AdvancedPasswordStrengthIndicator 
+                    password={passwordData.newPassword} 
+                    showDetailed={true}
                   />
                 </div>
                 <div>
@@ -385,7 +463,7 @@ const ProfilePage = () => {
                 onClick={() => setShowMasterPasswordSection(!showMasterPasswordSection)}
                 variant="outline"
                 size="sm"
-                className="border-green-500/30 text-green-400 hover:bg-green-500/10"
+                className="bg-white border-blue-400 text-blue-600 hover:bg-blue-50 hover:text-blue-700 border font-semibold"
               >
                 {showMasterPasswordSection ? 'Cancel' : 'Change Master Password'}
               </Button>
@@ -413,6 +491,10 @@ const ProfilePage = () => {
                     onChange={(e) => setMasterPasswordData(prev => ({ ...prev, newMasterPassword: e.target.value }))}
                     className="glass-input bg-white/5 border-white/20 text-white"
                     placeholder="Enter new master password"
+                  />
+                  <AdvancedPasswordStrengthIndicator 
+                    password={masterPasswordData.newMasterPassword} 
+                    showDetailed={true}
                   />
                 </div>
                 <div>

@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Lock, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import AdvancedPasswordStrengthIndicator from '@/components/vault/AdvancedPasswordStrengthIndicator';
+import { analyzePasswordStrength } from '@/utils/passwordStrength';
 
 interface MasterPasswordModalProps {
   isOpen: boolean;
@@ -24,25 +26,82 @@ const MasterPasswordModal: React.FC<MasterPasswordModalProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
+  const validatePassword = (password: string) => {
+    const errors = [];
+    
+    // Check length
+    if (password.length <= 10) {
+      errors.push('Password must be more than 10 characters');
+    }
+    
+    // Check for uppercase
+    if (!/[A-Z]/.test(password)) {
+      errors.push('Password must contain at least one uppercase letter');
+    }
+    
+    // Check for lowercase
+    if (!/[a-z]/.test(password)) {
+      errors.push('Password must contain at least one lowercase letter');
+    }
+    
+    // Check for special characters
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\?]/.test(password)) {
+      errors.push('Password must contain at least one special character');
+    }
+    
+    // Check for alphanumeric (numbers)
+    if (!/[0-9]/.test(password)) {
+      errors.push('Password must contain at least one number');
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (isCreating && masterPassword !== confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Passwords do not match",
-        variant: "destructive"
-      });
-      return;
-    }
+    if (isCreating) {
+      const validation = validatePassword(masterPassword);
+      
+      if (!validation.isValid) {
+        toast({
+          title: "Password Validation Failed",
+          description: validation.errors.join('. '),
+          variant: "destructive"
+        });
+        return;
+      }
 
-    if (masterPassword.length < 8) {
-      toast({
-        title: "Error",
-        description: "Master password must be at least 8 characters long",
-        variant: "destructive"
-      });
-      return;
+      const strengthResult = analyzePasswordStrength(masterPassword);
+      if (strengthResult.isWeak) {
+        toast({
+          title: "Weak Password",
+          description: "Please choose a stronger master password",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (masterPassword !== confirmPassword) {
+        toast({
+          title: "Error",
+          description: "Passwords do not match",
+          variant: "destructive"
+        });
+        return;
+      }
+    } else {
+      if (masterPassword.length < 8) {
+        toast({
+          title: "Error",
+          description: "Master password must be at least 8 characters long",
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     onSubmit(masterPassword);
@@ -83,6 +142,12 @@ const MasterPasswordModal: React.FC<MasterPasswordModalProps> = ({
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+            {isCreating && (
+              <AdvancedPasswordStrengthIndicator 
+                password={masterPassword} 
+                showDetailed={true}
+              />
+            )}
           </div>
 
           {isCreating && (
@@ -107,7 +172,7 @@ const MasterPasswordModal: React.FC<MasterPasswordModalProps> = ({
               type="button"
               variant="outline"
               onClick={onClose}
-              className="flex-1 bg-white/10 text-white border-white/20 hover:bg-white/20 hover:text-white border font-semibold"
+              className="flex-1 bg-white border-blue-400 text-blue-600 hover:bg-blue-50 hover:text-blue-700 border font-semibold"
             >
               Cancel
             </Button>
