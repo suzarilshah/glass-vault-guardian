@@ -59,7 +59,17 @@ const CertificateVault: React.FC<CertificateVaultProps> = ({
   } = useCertificateVault({ masterPassword: propMasterPassword, onMasterPasswordSet });
 
   if (!masterPassword) {
-    return <VaultLockedScreen type="Certificate" />;
+    return (
+      <VaultLockedScreen 
+        type="Certificate"
+        showMasterModal={showMasterModal}
+        setShowMasterModal={setShowMasterModal}
+        handleMasterPasswordSubmit={handleMasterPasswordSubmit}
+        isCreatingMaster={isCreatingMaster}
+        lockTimeoutMinutes={lockTimeoutMinutes}
+        handleTimeoutChange={handleTimeoutChange}
+      />
+    );
   }
 
   if (showMasterModal) {
@@ -82,8 +92,12 @@ const CertificateVault: React.FC<CertificateVaultProps> = ({
         icon={Shield}
         remainingTime={remainingTime}
         lockTimeoutMinutes={lockTimeoutMinutes}
-        onLock={manualLockVault}
+        onLockVault={manualLockVault}
         onShowTimerSettings={() => setShowTimerSettings(true)}
+        onShowGroupManager={() => setShowGroupManager(true)}
+        onExportPasswords={exportCertificates}
+        onShowForm={handleShowForm}
+        addButtonText="Add Certificate"
       />
 
       {expiredEntries.length > 0 && (
@@ -96,7 +110,15 @@ const CertificateVault: React.FC<CertificateVaultProps> = ({
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12 lg:col-span-3">
           <GroupSidebar
-            groups={groupStats}
+            groups={groupStats.map(g => ({
+              id: g.id,
+              name: g.name,
+              description: g.description || '',
+              user_id: g.user_id,
+              created_at: g.created_at,
+              updated_at: g.updated_at,
+              count: g.count
+            }))}
             selectedGroup={selectedGroup}
             ungroupedCount={ungroupedCount}
             totalCount={entries.length}

@@ -3,40 +3,52 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Edit, Trash2 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { Card } from '@/components/ui/card';
+import { Plus, Edit2, Trash2, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Group {
   id: string;
   name: string;
-  description: string;
+  description?: string;
 }
 
 interface GroupManagerProps {
   isOpen: boolean;
   onClose: () => void;
-  groupType: 'password' | 'api'; // New prop to distinguish group types
+  onGroupsChanged?: () => Promise<void>;
+  type: string;
 }
 
-const GroupManager: React.FC<GroupManagerProps> = ({ isOpen, onClose, groupType }) => {
-  const { user } = useAuth();
-  const { toast } = useToast();
+const GroupManager: React.FC<GroupManagerProps> = ({
+  isOpen,
+  onClose,
+  onGroupsChanged,
+  type
+}) => {
   const [groups, setGroups] = useState<Group[]>([]);
+  const [showForm, setShowForm] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
   const [formData, setFormData] = useState({ name: '', description: '' });
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  const tableName = groupType === 'password' ? 'password_groups' : 'api_groups';
+  const getTableName = () => {
+    switch (type) {
+      case 'password': return 'password_groups';
+      case 'api': return 'api_groups';
+      case 'certificate': return 'certificate_groups';
+      default: return 'password_groups';
+    }
+  };
 
   const fetchGroups = async () => {
-    if (!user) return;
-
     try {
       const { data, error } = await supabase
-        .from(tableName)
+        .from(getTableName())
         .select('*')
         .order('name');
 
@@ -47,7 +59,7 @@ const GroupManager: React.FC<GroupManagerProps> = ({ isOpen, onClose, groupType 
       toast({
         title: "Error",
         description: "Failed to fetch groups",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -56,175 +68,206 @@ const GroupManager: React.FC<GroupManagerProps> = ({ isOpen, onClose, groupType 
     if (isOpen) {
       fetchGroups();
     }
-  }, [isOpen, user, tableName]);
+  }, [isOpen, type]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !formData.name.trim()) return;
+    setIsLoading(true);
 
-    setLoading(true);
     try {
       if (editingGroup) {
         const { error } = await supabase
-          .from(tableName)
+          .from(getTableName())
           .update({
             name: formData.name,
-            description: formData.description,
-            updated_at: new Date().toISOString(),
+            description: formData.description || null,
+            updated_at: new Date().toISOString()
           })
           .eq('id', editingGroup.id);
 
         if (error) throw error;
-        toast({
-          title: "Success",
-          description: "Group updated successfully",
-        });
+        toast({ title: "Success", description: "Group updated successfully" });
       } else {
         const { error } = await supabase
-          .from(tableName)
+          .from(getTableName())
           .insert({
             name: formData.name,
-            description: formData.description,
-            user_id: user.id,
+            description: formData.description || null,
+            user_id: (await supabase.auth.getUser()).data.user?.id
           });
 
         if (error) throw error;
-        toast({
-          title: "Success",
-          description: "Group created successfully",
-        });
+        toast({ title: "Success", description: "Group created successfully" });
       }
 
       setFormData({ name: '', description: '' });
       setEditingGroup(null);
-      fetchGroups();
+      setShowForm(false);
+      await fetchGroups();
+      if (onGroupsChanged) {
+        await onGroupsChanged();
+      }
     } catch (error) {
       console.error('Error saving group:', error);
       toast({
         title: "Error",
         description: "Failed to save group",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const handleEdit = (group: Group) => {
-    setEditingGroup(group);
-    setFormData({ name: group.name, description: group.description });
-  };
-
   const handleDelete = async (groupId: string) => {
-    if (!confirm('Are you sure you want to delete this group?')) return;
+    if (!confirm('Are you sure you want to delete this group? This action cannot be undone.')) {
+      return;
+    }
 
     try {
       const { error } = await supabase
-        .from(tableName)
+        .from(getTableName())
         .delete()
         .eq('id', groupId);
 
       if (error) throw error;
-      toast({
-        title: "Success",
-        description: "Group deleted successfully",
-      });
-      fetchGroups();
+      
+      toast({ title: "Success", description: "Group deleted successfully" });
+      await fetchGroups();
+      if (onGroupsChanged) {
+        await onGroupsChanged();
+      }
     } catch (error) {
       console.error('Error deleting group:', error);
       toast({
         title: "Error",
         description: "Failed to delete group",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
 
-  const handleCancel = () => {
+  const handleEdit = (group: Group) => {
+    setEditingGroup(group);
+    setFormData({ name: group.name, description: group.description || '' });
+    setShowForm(true);
+  };
+
+  const handleClose = () => {
+    setShowForm(false);
     setEditingGroup(null);
     setFormData({ name: '', description: '' });
+    onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="glass-card bg-white/10 backdrop-blur-xl border-white/20 max-w-md">
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="glass-card bg-gray-900/95 backdrop-blur-xl border-white/20 max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="text-white">
-            Manage {groupType === 'password' ? 'Password' : 'API'} Groups
+          <DialogTitle className="flex items-center gap-2 text-white">
+            <Users className="w-5 h-5 text-green-400" />
+            Manage {type.charAt(0).toUpperCase() + type.slice(1)} Groups
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Input
-              placeholder="Group name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="glass-input bg-white/5 border-white/20 text-white placeholder:text-gray-400"
-              required
-            />
-          </div>
-          <div>
-            <Textarea
-              placeholder="Description (optional)"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="glass-input bg-white/5 border-white/20 text-white placeholder:text-gray-400"
-              rows={3}
-            />
-          </div>
-          <div className="flex gap-2">
+        {!showForm ? (
+          <div className="space-y-4">
             <Button
-              type="submit"
-              disabled={loading}
-              className="flex-1 glass-button bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => setShowForm(true)}
+              className="glass-button bg-green-600 hover:bg-green-700 text-white"
             >
               <Plus className="w-4 h-4 mr-2" />
-              {editingGroup ? 'Update' : 'Create'} Group
+              Create New Group
             </Button>
-            {editingGroup && (
+
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {groups.map((group) => (
+                <Card key={group.id} className="glass-card bg-white/5 border-white/20 p-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="font-medium text-white">{group.name}</h3>
+                      {group.description && (
+                        <p className="text-sm text-gray-400 mt-1">{group.description}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleEdit(group)}
+                        size="sm"
+                        variant="outline"
+                        className="border-white/20 text-gray-300 hover:bg-gray-700"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        onClick={() => handleDelete(group.id)}
+                        size="sm"
+                        variant="outline"
+                        className="border-red-500/50 text-red-400 hover:bg-red-500/20"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+              {groups.length === 0 && (
+                <div className="text-center py-8 text-gray-400">
+                  No groups created yet
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="groupName" className="text-gray-300">Group Name</Label>
+              <Input
+                id="groupName"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                className="glass-input bg-white/5 border-white/20 text-white"
+                placeholder="Enter group name"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="groupDescription" className="text-gray-300">Description (Optional)</Label>
+              <Textarea
+                id="groupDescription"
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                className="glass-input bg-white/5 border-white/20 text-white"
+                placeholder="Enter group description"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-2 pt-4">
               <Button
                 type="button"
-                onClick={handleCancel}
                 variant="outline"
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                onClick={() => {
+                  setShowForm(false);
+                  setEditingGroup(null);
+                  setFormData({ name: '', description: '' });
+                }}
+                className="flex-1 border-white/20 text-gray-300 hover:bg-gray-700"
+                disabled={isLoading}
               >
                 Cancel
               </Button>
-            )}
-          </div>
-        </form>
-
-        <div className="space-y-2 max-h-64 overflow-y-auto">
-          {groups.map((group) => (
-            <div key={group.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
-              <div className="flex-1">
-                <h4 className="font-medium text-white">{group.name}</h4>
-                {group.description && (
-                  <p className="text-sm text-gray-400">{group.description}</p>
-                )}
-              </div>
-              <div className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleEdit(group)}
-                  className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/20"
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleDelete(group.id)}
-                  className="text-red-400 hover:text-red-300 hover:bg-red-500/20"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
+              <Button
+                type="submit"
+                className="flex-1 glass-button bg-green-600 hover:bg-green-700 text-white"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Saving...' : (editingGroup ? 'Update' : 'Create')}
+              </Button>
             </div>
-          ))}
-        </div>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );

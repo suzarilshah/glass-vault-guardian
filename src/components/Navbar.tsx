@@ -1,18 +1,10 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Zap, Lock, Key, Shield, User, LogOut } from 'lucide-react';
+import { Shield, Key, FileText, Lock, User, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 
 interface NavbarProps {
   onShowVault: () => void;
@@ -21,119 +13,221 @@ interface NavbarProps {
   currentView: 'generator' | 'vault' | 'api-vault' | 'certificate-vault';
 }
 
-const Navbar = ({ onShowVault, onShowApiVault, onShowCertificateVault, currentView }: NavbarProps) => {
-  const { user, signOut } = useAuth();
+const Navbar: React.FC<NavbarProps> = ({ 
+  onShowVault, 
+  onShowApiVault, 
+  onShowCertificateVault, 
+  currentView 
+}) => {
+  const { signOut, user } = useAuth();
   const { toast } = useToast();
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const handleDeleteAccount = async () => {
-    setIsDeleting(true);
+  const handleSignOut = async () => {
     try {
-      const { error } = await supabase.functions.invoke('delete-user', {
-        headers: {
-          Authorization: `Bearer ${supabase.auth.getSession().data.session?.access_token}`,
-        },
-      });
-
-      if (error) {
-        console.error('Error deleting account:', error);
-        toast({
-          title: "Error",
-          description: "Failed to delete account. Please try again.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: "Account deleted successfully.",
-        });
-        await signOut();
-      }
+      await signOut();
+      toast({ title: "Signed out successfully" });
     } catch (error) {
-      console.error('Unexpected error deleting account:', error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again later.",
-        variant: "destructive",
+      console.error('Error signing out:', error);
+      toast({ 
+        title: "Error", 
+        description: "Failed to sign out", 
+        variant: "destructive" 
       });
-    } finally {
-      setIsDeleting(false);
     }
   };
 
-  return (
-    <nav className="flex items-center justify-between py-4 mb-8">
-      <div className="flex items-center space-x-6">
-        <Button
-          onClick={() => window.location.reload()}
-          variant={currentView === 'generator' ? 'default' : 'ghost'}
-          className={currentView === 'generator' 
-            ? 'glass-button bg-green-600 hover:bg-green-700 text-white' 
-            : 'text-gray-300 hover:text-white'
-          }
-        >
-          <Zap className="w-4 h-4 mr-2" />
-          Generator
-        </Button>
-        <Button
-          onClick={onShowVault}
-          variant={currentView === 'vault' ? 'default' : 'ghost'}
-          className={currentView === 'vault' 
-            ? 'glass-button bg-green-600 hover:bg-green-700 text-white' 
-            : 'text-gray-300 hover:text-white'
-          }
-        >
-          <Lock className="w-4 h-4 mr-2" />
-          Password Vault
-        </Button>
-        <Button
-          onClick={onShowApiVault}
-          variant={currentView === 'api-vault' ? 'default' : 'ghost'}
-          className={currentView === 'api-vault' 
-            ? 'glass-button bg-green-600 hover:bg-green-700 text-white' 
-            : 'text-gray-300 hover:text-white'
-          }
-        >
-          <Key className="w-4 h-4 mr-2" />
-          API Vault
-        </Button>
-        <Button
-          onClick={onShowCertificateVault}
-          variant={currentView === 'certificate-vault' ? 'default' : 'ghost'}
-          className={currentView === 'certificate-vault' 
-            ? 'glass-button bg-green-600 hover:bg-green-700 text-white' 
-            : 'text-gray-300 hover:text-white'
-          }
-        >
-          <Shield className="w-4 h-4 mr-2" />
-          Certificate Vault
-        </Button>
-      </div>
+  const handleGeneratorClick = () => {
+    window.location.href = '/';
+  };
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0 lg:h-10 lg:w-10 rounded-full">
-            <Avatar className="h-8 w-8 lg:h-10 lg:w-10">
-              <AvatarImage src={user?.user_metadata?.avatar_url} alt={user?.user_metadata?.full_name} />
-              <AvatarFallback>{user?.user_metadata?.full_name?.charAt(0)}</AvatarFallback>
-            </Avatar>
+  const getUserEmail = () => {
+    return user?.email || 'User';
+  };
+
+  return (
+    <nav className="bg-gray-900/50 backdrop-blur-sm border-b border-white/10 mb-6">
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo/Brand */}
+          <div className="flex items-center gap-2">
+            <Shield className="w-6 h-6 text-green-400" />
+            <span className="font-bold text-white">AI PW Shield</span>
+          </div>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-4">
+            <Button
+              onClick={handleGeneratorClick}
+              variant={currentView === 'generator' ? 'default' : 'ghost'}
+              className={currentView === 'generator' 
+                ? 'bg-green-600 hover:bg-green-700 text-white' 
+                : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }
+            >
+              <Key className="w-4 h-4 mr-2" />
+              Generator
+            </Button>
+            
+            <Button
+              onClick={onShowVault}
+              variant={currentView === 'vault' ? 'default' : 'ghost'}
+              className={currentView === 'vault' 
+                ? 'bg-green-600 hover:bg-green-700 text-white' 
+                : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }
+            >
+              <Lock className="w-4 h-4 mr-2" />
+              Password Vault
+            </Button>
+            
+            <Button
+              onClick={onShowApiVault}
+              variant={currentView === 'api-vault' ? 'default' : 'ghost'}
+              className={currentView === 'api-vault' 
+                ? 'bg-green-600 hover:bg-green-700 text-white' 
+                : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }
+            >
+              <Key className="w-4 h-4 mr-2" />
+              API Vault
+            </Button>
+
+            <Button
+              onClick={onShowCertificateVault}
+              variant={currentView === 'certificate-vault' ? 'default' : 'ghost'}
+              className={currentView === 'certificate-vault' 
+                ? 'bg-green-600 hover:bg-green-700 text-white' 
+                : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Certificate Vault
+            </Button>
+          </div>
+
+          {/* User Menu */}
+          <div className="hidden md:flex items-center gap-4">
+            <Link to="/profile">
+              <Button
+                variant="ghost"
+                className="text-gray-300 hover:text-white hover:bg-gray-700"
+              >
+                <User className="w-4 h-4 mr-2" />
+                {getUserEmail()}
+              </Button>
+            </Link>
+            
+            <Button
+              onClick={handleSignOut}
+              variant="ghost"
+              className="text-gray-300 hover:text-white hover:bg-gray-700"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <Button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            variant="ghost"
+            className="md:hidden text-gray-300 hover:text-white"
+          >
+            {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuLabel>My Account</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem disabled>{user?.email}</DropdownMenuItem>
-          <DropdownMenuItem onClick={signOut}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign out
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-red-500" onClick={handleDeleteAccount} disabled={isDeleting}>
-            <User className="mr-2 h-4 w-4" />
-            {isDeleting ? 'Deleting...' : 'Delete Account'}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </div>
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <div className="md:hidden border-t border-white/10 py-4 space-y-2">
+            <Button
+              onClick={() => {
+                handleGeneratorClick();
+                setIsMenuOpen(false);
+              }}
+              variant={currentView === 'generator' ? 'default' : 'ghost'}
+              className={`w-full justify-start ${currentView === 'generator' 
+                ? 'bg-green-600 hover:bg-green-700 text-white' 
+                : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              <Key className="w-4 h-4 mr-2" />
+              Generator
+            </Button>
+            
+            <Button
+              onClick={() => {
+                onShowVault();
+                setIsMenuOpen(false);
+              }}
+              variant={currentView === 'vault' ? 'default' : 'ghost'}
+              className={`w-full justify-start ${currentView === 'vault' 
+                ? 'bg-green-600 hover:bg-green-700 text-white' 
+                : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              <Lock className="w-4 h-4 mr-2" />
+              Password Vault
+            </Button>
+            
+            <Button
+              onClick={() => {
+                onShowApiVault();
+                setIsMenuOpen(false);
+              }}
+              variant={currentView === 'api-vault' ? 'default' : 'ghost'}
+              className={`w-full justify-start ${currentView === 'api-vault' 
+                ? 'bg-green-600 hover:bg-green-700 text-white' 
+                : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              <Key className="w-4 h-4 mr-2" />
+              API Vault
+            </Button>
+
+            <Button
+              onClick={() => {
+                onShowCertificateVault();
+                setIsMenuOpen(false);
+              }}
+              variant={currentView === 'certificate-vault' ? 'default' : 'ghost'}
+              className={`w-full justify-start ${currentView === 'certificate-vault' 
+                ? 'bg-green-600 hover:bg-green-700 text-white' 
+                : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Certificate Vault
+            </Button>
+            
+            <div className="border-t border-white/10 pt-2 mt-2">
+              <Link to="/profile">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  {getUserEmail()}
+                </Button>
+              </Link>
+              
+              <Button
+                onClick={() => {
+                  handleSignOut();
+                  setIsMenuOpen(false);
+                }}
+                variant="ghost"
+                className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     </nav>
   );
 };

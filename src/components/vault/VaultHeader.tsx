@@ -5,6 +5,9 @@ import { Plus, Download, Users, Settings, Lock, Upload, FileText } from 'lucide-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface VaultHeaderProps {
+  title?: string;
+  subtitle?: string;
+  icon?: React.ComponentType<any>;
   remainingTime: number;
   onShowTimerSettings: () => void;
   onShowGroupManager: () => void;
@@ -13,13 +16,15 @@ interface VaultHeaderProps {
   onLockVault: () => void;
   onImportData?: () => void;
   onDownloadTemplate?: () => void;
-  title?: string;
   addButtonText?: string;
   lockTimeoutMinutes?: number;
   onTimeoutChange?: (minutes: number) => void;
 }
 
 const VaultHeader: React.FC<VaultHeaderProps> = ({
+  title = "Password Vault",
+  subtitle,
+  icon: Icon,
   remainingTime,
   onShowTimerSettings,
   onShowGroupManager,
@@ -28,7 +33,6 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({
   onLockVault,
   onImportData,
   onDownloadTemplate,
-  title = "Password Vault",
   addButtonText = "Add Password",
   lockTimeoutMinutes = 5,
   onTimeoutChange
@@ -51,13 +55,19 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold text-white">{title}</h2>
+          <div className="flex items-center gap-3">
+            {Icon && <Icon className="w-6 h-6 text-green-400" />}
+            <div>
+              <h2 className="text-2xl font-bold text-white">{title}</h2>
+              {subtitle && <p className="text-gray-400 text-sm">{subtitle}</p>}
+            </div>
+          </div>
           <div className="flex items-center gap-2 px-3 py-1 bg-green-600/20 rounded-lg border border-green-500/30">
             <Lock className="w-4 h-4 text-green-400" />
             <span className="text-green-400 text-sm font-medium">
               Auto-lock: {formatTime(remainingTime)}
             </span>
-            <Select value={lockTimeoutMinutes.toString()} onValueChange={handleTimeoutChange}>
+            <Select value={lockTimeoutMinutes?.toString()} onValueChange={handleTimeoutChange}>
               <SelectTrigger className="w-20 h-6 text-xs glass-input bg-green-600/20 border-green-500/30 text-green-400">
                 <Settings className="w-3 h-3" />
               </SelectTrigger>
