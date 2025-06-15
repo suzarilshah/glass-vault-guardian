@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Save, Copy, RefreshCw, Shield } from 'lucide-react';
+import { Save, Copy, RefreshCw, Shield, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,6 +11,7 @@ interface GeneratedPasswordDisplayProps {
   onRegenerate: () => void;
   onSave: () => void;
   onCopy: () => void;
+  onAnalyzeWithAI?: () => void;
   showAdvancedScoring: boolean;
   onToggleAdvancedScoring: () => void;
   passwordScore: any;
@@ -23,6 +24,7 @@ const GeneratedPasswordDisplay: React.FC<GeneratedPasswordDisplayProps> = ({
   onRegenerate,
   onSave,
   onCopy,
+  onAnalyzeWithAI,
   showAdvancedScoring,
   onToggleAdvancedScoring,
   passwordScore,
@@ -49,6 +51,17 @@ const GeneratedPasswordDisplay: React.FC<GeneratedPasswordDisplayProps> = ({
               <RefreshCw className="w-4 h-4 mr-2" />
               Regenerate
             </Button>
+            {password && onAnalyzeWithAI && (
+              <Button
+                onClick={onAnalyzeWithAI}
+                variant="outline"
+                size="sm"
+                className="bg-purple-600 hover:bg-purple-700 text-white border-purple-500 hover:border-purple-400 font-semibold"
+              >
+                <Brain className="w-4 h-4 mr-2" />
+                Analyze with AI
+              </Button>
+            )}
           </div>
         </div>
         

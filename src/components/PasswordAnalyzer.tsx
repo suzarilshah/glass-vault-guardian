@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Shield, Calculator, AlertTriangle, CheckCircle, BarChart3, Loader2, Database, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -9,8 +10,12 @@ import { calculatePasswordScore } from '@/utils/passwordScoring';
 import { useAIPasswordAnalysis } from '@/hooks/useAIPasswordAnalysis';
 import AIAnalysisDisplay from '@/components/analyzer/AIAnalysisDisplay';
 
-const PasswordAnalyzer = () => {
-  const [testPassword, setTestPassword] = useState('');
+interface PasswordAnalyzerProps {
+  initialPassword?: string;
+}
+
+const PasswordAnalyzer: React.FC<PasswordAnalyzerProps> = ({ initialPassword = '' }) => {
+  const [testPassword, setTestPassword] = useState(initialPassword);
   const [analysis, setAnalysis] = useState<{
     entropy: number;
     crackTime: { seconds: number; humanReadable: string };
@@ -19,6 +24,13 @@ const PasswordAnalyzer = () => {
 
   const { result: breachResult, isLoading: breachLoading } = useDebouncedBreachCheck(testPassword, 500);
   const { isAnalyzing, aiAnalysis, analyzePasswordWithAI, clearAnalysis } = useAIPasswordAnalysis();
+
+  // Update password when initialPassword changes
+  useEffect(() => {
+    if (initialPassword && initialPassword !== testPassword) {
+      setTestPassword(initialPassword);
+    }
+  }, [initialPassword]);
 
   const analyzePassword = () => {
     if (!testPassword) {
@@ -33,6 +45,12 @@ const PasswordAnalyzer = () => {
     
     setAnalysis({ entropy, crackTime, passwordScore });
   };
+
+  // Auto-analyze when testPassword changes
+  useEffect(() => {
+    analyzePassword();
+    if (!testPassword) clearAnalysis();
+  }, [testPassword]);
 
   const handleAIAnalysis = () => {
     if (analysis) {

@@ -20,6 +20,8 @@ interface PasswordGeneratorProps {
 const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showAdvancedScoring, setShowAdvancedScoring] = useState(false);
+  const [currentTab, setCurrentTab] = useState<'generator' | 'analyzer'>('generator');
+  const [analyzerPassword, setAnalyzerPassword] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -54,6 +56,20 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
     setShowSaveModal(true);
   };
 
+  const handleAnalyzeWithAI = () => {
+    if (!password) {
+      toast({
+        title: "Error",
+        description: "No password to analyze",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setAnalyzerPassword(password);
+    setCurrentTab('analyzer');
+  };
+
   const handleKeywordPasswordGenerated = (keywordPassword: string) => {
     setPassword(keywordPassword);
   };
@@ -64,7 +80,7 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="generator" className="w-full">
+      <Tabs value={currentTab} onValueChange={(value) => setCurrentTab(value as 'generator' | 'analyzer')} className="w-full">
         <TabsList className="grid w-full grid-cols-2 glass-card bg-white/5 backdrop-blur-xl border-white/20">
           <TabsTrigger 
             value="generator" 
@@ -86,6 +102,7 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
             onRegenerate={generatePassword}
             onSave={handleSavePassword}
             onCopy={copyToClipboard}
+            onAnalyzeWithAI={handleAnalyzeWithAI}
             showAdvancedScoring={showAdvancedScoring}
             onToggleAdvancedScoring={() => setShowAdvancedScoring(!showAdvancedScoring)}
             passwordScore={passwordScore}
@@ -103,7 +120,7 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
         </TabsContent>
 
         <TabsContent value="analyzer" className="space-y-6 mt-6">
-          <PasswordAnalyzer />
+          <PasswordAnalyzer initialPassword={analyzerPassword} />
         </TabsContent>
       </Tabs>
 
