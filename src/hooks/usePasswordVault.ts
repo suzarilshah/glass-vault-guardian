@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -84,7 +83,6 @@ export const usePasswordVault = ({ masterPassword: propMasterPassword, onMasterP
     onMasterPasswordSet,
   });
 
-  // Wrapper functions to match the original API
   const handleMasterPasswordSubmit = useCallback(async (password: string) => {
     await baseHandleMasterPasswordSubmit(password, isCreatingMaster);
   }, [baseHandleMasterPasswordSubmit, isCreatingMaster]);
@@ -162,6 +160,7 @@ export const usePasswordVault = ({ masterPassword: propMasterPassword, onMasterP
     handleMasterPasswordSubmit,
     handleTimeoutChange,
     fetchGroups: handleFetchGroups,
+    fetchEntries,
     generateNewPassword,
     regeneratePassword,
     saveEntry,
