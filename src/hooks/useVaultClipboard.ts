@@ -24,11 +24,7 @@ export const useVaultClipboard = ({ masterPassword, startLockTimer }: UseVaultCl
     }
   }, [masterPassword, toast, startLockTimer]);
 
-  const togglePasswordVisibility = useCallback((id: string, visiblePasswords: Set<string>, setVisiblePasswords: (passwords: Set<string>) => void) => {
-    const newVisible = new Set(visiblePasswords);
-    if (newVisible.has(id)) newVisible.delete(id);
-    else newVisible.add(id);
-    setVisiblePasswords(newVisible);
+  const togglePasswordVisibility = useCallback((id: string) => {
     startLockTimer();
   }, [startLockTimer]);
 

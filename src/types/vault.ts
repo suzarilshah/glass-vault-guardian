@@ -5,6 +5,9 @@ export interface PasswordGroup {
   description: string;
 }
 
+// Alias for backward compatibility
+export type Group = PasswordGroup;
+
 export interface PasswordEntry {
   id: string;
   title: string;
@@ -17,6 +20,7 @@ export interface PasswordEntry {
   is_expired: boolean;
   created_at: string;
   updated_at: string;
+  expiration_days?: string;
 }
 
 export interface FormData {

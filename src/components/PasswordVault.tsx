@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import GroupManager from './GroupManager';
 import VaultHeader from './vault/VaultHeader';
 import TimerSettings from './vault/TimerSettings';
@@ -48,9 +48,11 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({
     setShowTimerSettings,
     setSelectedGroup,
     setFormData,
+    setVisiblePasswords,
     handleMasterPasswordSubmit,
     handleTimeoutChange,
     fetchGroups,
+    fetchEntries,
     generateNewPassword,
     regeneratePassword,
     saveEntry,
@@ -65,7 +67,6 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({
     ungroupedCount,
     handleShowForm,
     manualLockVault,
-    fetchEntries,
   } = usePasswordVault({ 
     masterPassword: propMasterPassword, 
     onMasterPasswordSet,
@@ -78,6 +79,18 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({
     masterPassword,
     fetchEntries,
   });
+
+  // Custom toggle function that handles the visibility state locally
+  const handleTogglePasswordVisibility = useCallback((id: string) => {
+    const newVisible = new Set(visiblePasswords);
+    if (newVisible.has(id)) {
+      newVisible.delete(id);
+    } else {
+      newVisible.add(id);
+    }
+    setVisiblePasswords(newVisible);
+    togglePasswordVisibility(id);
+  }, [visiblePasswords, setVisiblePasswords, togglePasswordVisibility]);
 
   if (!masterPassword) {
     return (
@@ -170,7 +183,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({
                 groups={groups}
                 visiblePasswords={visiblePasswords}
                 masterPassword={masterPassword}
-                onToggleVisibility={togglePasswordVisibility}
+                onToggleVisibility={handleTogglePasswordVisibility}
                 onCopyPassword={copyPassword}
                 onEditEntry={editEntry}
                 onDeleteEntry={deleteEntry}

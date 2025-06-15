@@ -1,7 +1,8 @@
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { PasswordEntry, FormData, Group } from '@/types/vault';
+import { PasswordEntry, FormData, PasswordGroup } from '@/types/vault';
 import { useVaultState } from './useVaultState';
 import { useVaultTimer } from './useVaultTimer';
 import { useVaultOperations } from './useVaultOperations';
@@ -90,6 +91,8 @@ export const usePasswordVault = ({
     startLockTimer,
     lockTimeoutMinutes,
     onMasterPasswordSet,
+    vaultType: 'password',
+    useUnifiedPassword,
   });
 
   const handleMasterPasswordSubmit = useCallback(async (password: string) => {
@@ -97,7 +100,7 @@ export const usePasswordVault = ({
   }, [baseHandleMasterPasswordSubmit, isCreatingMaster]);
 
   const generateNewPassword = useCallback(async (length: number = 16) => {
-    const newPassword = await baseGenerateNewPassword(length);
+    const newPassword = await baseGenerateNewPassword();
     setFormData(prev => ({ ...prev, password: newPassword }));
   }, [baseGenerateNewPassword, setFormData]);
 
@@ -142,7 +145,7 @@ export const usePasswordVault = ({
     [entries, selectedGroup]
   );
   
-  const expiredEntries = useMemo(() => entries.filter(entry => entry.expiration_days && parseInt(entry.expiration_days) > 0 && (new Date(Date.now() + parseInt(entry.expiration_days) * 24 * 60 * 60 * 1000) < new Date())), [entries]);
+  const expiredEntries = useMemo(() => entries.filter(entry => entry.expires_at && new Date(entry.expires_at) < new Date()), [entries]);
   
   const { groupStats, ungroupedCount } = useMemo(() => {
     const stats = groups.map(group => ({ 
@@ -179,6 +182,7 @@ export const usePasswordVault = ({
     handleMasterPasswordSubmit,
     handleTimeoutChange,
     fetchGroups: handleFetchGroups,
+    fetchEntries,
     generateNewPassword,
     saveEntry,
     editEntry,
