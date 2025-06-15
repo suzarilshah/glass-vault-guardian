@@ -41,19 +41,19 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/" className="text-gray-400 hover:text-green-400 transition-colors flex items-center gap-2">
+                <Link to="/vault" className="text-gray-400 hover:text-green-400 transition-colors flex items-center gap-2">
                   <Lock className="w-3 h-3" />
                   Password Vault
                 </Link>
               </li>
               <li>
-                <Link to="/" className="text-gray-400 hover:text-green-400 transition-colors flex items-center gap-2">
+                <Link to="/api-vault" className="text-gray-400 hover:text-green-400 transition-colors flex items-center gap-2">
                   <Key className="w-3 h-3" />
                   API Vault
                 </Link>
               </li>
               <li>
-                <Link to="/" className="text-gray-400 hover:text-green-400 transition-colors flex items-center gap-2">
+                <Link to="/export" className="text-gray-400 hover:text-green-400 transition-colors flex items-center gap-2">
                   <Download className="w-3 h-3" />
                   Export Data
                 </Link>

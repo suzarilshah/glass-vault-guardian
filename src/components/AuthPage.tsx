@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -69,6 +68,10 @@ const AuthPage = () => {
       errors
     };
   };
+
+  // Added real-time validation state
+  const signUpPasswordValidation = validatePassword(password, firstName, lastName);
+  const canSignUp = email && password && firstName && lastName && signUpPasswordValidation.isValid && !loading;
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -281,14 +284,25 @@ const AuthPage = () => {
                   </button>
                 </div>
                 {isSignUp && password && (
-                  <PasswordStrengthIndicator password={password} />
+                  <>
+                    <PasswordStrengthIndicator password={password} />
+                    {/* Add extra feedback for unmet requirements, if needed */}
+                    {!signUpPasswordValidation.isValid && (
+                      <ul className="mt-2 text-xs text-red-400 space-y-1 px-2">
+                        {signUpPasswordValidation.errors.map((err, idx) => (
+                          <li key={idx}>• {err}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
                 )}
               </div>
 
               <Button
                 type="submit"
-                className="w-full glass-button bg-green-600 hover:bg-green-700 text-white"
-                disabled={loading}
+                className={`w-full glass-button bg-green-600 hover:bg-green-700 text-white 
+                  ${isSignUp ? (!canSignUp ? 'opacity-50 cursor-not-allowed' : '') : ''}`}
+                disabled={isSignUp ? !canSignUp : loading}
               >
                 {loading ? 'Please wait...' : (isSignUp ? 'Create Account' : 'Sign In')}
               </Button>
