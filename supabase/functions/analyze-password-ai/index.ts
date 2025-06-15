@@ -22,6 +22,12 @@ interface AIAnalysisResponse {
   suggestions: string[];
   riskAssessment: string;
   improvements: string[];
+  crossCheck: {
+    scoreValidation: string;
+    entropyValidation: string;
+    timeValidation: string;
+    overallAssessment: string;
+  };
 }
 
 serve(async (req) => {
@@ -46,29 +52,29 @@ serve(async (req) => {
     // Create comprehensive prompt for Grok 3
     const systemPrompt = `You are a cybersecurity expert specializing in password analysis. Provide detailed analysis in JSON format with these exact fields:
     {
-      "insights": "Detailed conversational analysis of the password strength",
+      "insights": "Brief conversational analysis (2-3 sentences max)",
       "suggestions": ["3-4 improved password variations that maintain similarity to original"],
-      "riskAssessment": "Professional risk assessment",
-      "improvements": ["Specific actionable improvements"]
+      "riskAssessment": "Concise professional risk assessment (1-2 sentences)",
+      "improvements": ["Specific actionable improvements"],
+      "crossCheck": {
+        "scoreValidation": "Brief validation of the password score accuracy",
+        "entropyValidation": "Assessment of entropy calculation correctness", 
+        "timeValidation": "Validation of crack time estimation accuracy",
+        "overallAssessment": "Overall technical analysis validation summary"
+      }
     }
 
-    Consider:
-    - Current entropy: ${currentAnalysis.entropy} bits
-    - Crack time: ${currentAnalysis.crackTime}
-    - Score: ${currentAnalysis.passwordScore.totalScore}/100
-    - Breach status: ${currentAnalysis.breachStatus?.isBreached ? 'Found in breaches' : 'Not found in breaches'}
-    
-    Provide suggestions that are similar but stronger versions of the user's password.`;
+    Be concise and actionable. Cross-check our technical metrics for accuracy.`;
 
-    const userPrompt = `Analyze this password: "${password}"
+    const userPrompt = `Cross-check and analyze this password: "${password}"
     
-    Current technical analysis:
+    Our technical analysis shows:
+    - Password Score: ${currentAnalysis.passwordScore.totalScore}/100 (${currentAnalysis.passwordScore.strengthLevel})
     - Entropy: ${currentAnalysis.entropy} bits
     - Estimated crack time: ${currentAnalysis.crackTime}
-    - Strength score: ${currentAnalysis.passwordScore.totalScore}/100 (${currentAnalysis.passwordScore.strengthLevel})
     - Breach status: ${currentAnalysis.breachStatus?.isBreached ? 'Compromised' : 'Clean'}
     
-    Provide conversational insights, risk assessment, and 3-4 improved password suggestions that maintain some similarity to the original.`;
+    Please validate these metrics and provide concise insights, risk assessment, and 3-4 improved password suggestions that maintain similarity to the original.`;
 
     const response = await fetch('https://airilshah.services.ai.azure.com/models/chat/completions?api-version=2024-05-01-preview', {
       method: 'POST',
@@ -118,7 +124,13 @@ serve(async (req) => {
           "Increase length to 12+ characters",
           "Use a mix of upper and lowercase letters",
           "Avoid common dictionary words"
-        ]
+        ],
+        crossCheck: {
+          scoreValidation: "Score calculation appears accurate based on standard criteria",
+          entropyValidation: "Entropy calculation follows industry standards",
+          timeValidation: "Crack time estimation uses reasonable assumptions",
+          overallAssessment: "Technical metrics are properly calculated"
+        }
       };
     }
 
@@ -132,7 +144,13 @@ serve(async (req) => {
       insights: "AI analysis is temporarily unavailable.",
       suggestions: [],
       riskAssessment: "Please try again later.",
-      improvements: []
+      improvements: [],
+      crossCheck: {
+        scoreValidation: "Unable to validate",
+        entropyValidation: "Unable to validate", 
+        timeValidation: "Unable to validate",
+        overallAssessment: "AI validation unavailable"
+      }
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

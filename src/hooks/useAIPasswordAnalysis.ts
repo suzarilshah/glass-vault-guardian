@@ -8,6 +8,12 @@ interface AIAnalysisResponse {
   suggestions: string[];
   riskAssessment: string;
   improvements: string[];
+  crossCheck: {
+    scoreValidation: string;
+    entropyValidation: string;
+    timeValidation: string;
+    overallAssessment: string;
+  };
 }
 
 interface CurrentAnalysis {
