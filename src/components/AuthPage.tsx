@@ -3,22 +3,72 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Shield, Mail, Lock, Eye, EyeOff, Key } from 'lucide-react';
+import { Shield, Mail, Lock, Eye, EyeOff, Key, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/components/ui/input-otp";
 import { supabase } from '@/integrations/supabase/client';
+import PasswordStrengthIndicator from './vault/PasswordStrengthIndicator';
 
 const AuthPage = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signUp, signIn } = useAuth();
   const { toast } = useToast();
   const [isMfaChallenge, setIsMfaChallenge] = useState(false);
   const [mfaCode, setMfaCode] = useState('');
+
+  const validatePassword = (password: string, firstName: string, lastName: string): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+
+    // Check length
+    if (password.length <= 10) {
+      errors.push("Password must be more than 10 characters");
+    }
+
+    // Check for uppercase
+    if (!/[A-Z]/.test(password)) {
+      errors.push("Password must contain at least one uppercase letter");
+    }
+
+    // Check for lowercase
+    if (!/[a-z]/.test(password)) {
+      errors.push("Password must contain at least one lowercase letter");
+    }
+
+    // Check for special characters
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\?]/.test(password)) {
+      errors.push("Password must contain at least one special character");
+    }
+
+    // Check for alphanumeric (numbers)
+    if (!/[0-9]/.test(password)) {
+      errors.push("Password must contain at least one number");
+    }
+
+    // Check if password contains personal names
+    const lowerPassword = password.toLowerCase();
+    const lowerFirstName = firstName.toLowerCase();
+    const lowerLastName = lastName.toLowerCase();
+
+    if (lowerFirstName && lowerPassword.includes(lowerFirstName)) {
+      errors.push("Password must not contain your first name");
+    }
+
+    if (lowerLastName && lowerPassword.includes(lowerLastName)) {
+      errors.push("Password must not contain your last name");
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,10 +101,23 @@ const AuthPage = () => {
 
   const handleSignUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    
+    if (!email || !password || !firstName || !lastName) {
       toast({ title: "Error", description: "Please fill in all fields", variant: "destructive" });
       return;
     }
+
+    // Validate password
+    const validation = validatePassword(password, firstName, lastName);
+    if (!validation.isValid) {
+      toast({ 
+        title: "Password Requirements Not Met", 
+        description: validation.errors.join(". "), 
+        variant: "destructive" 
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -104,7 +167,7 @@ const AuthPage = () => {
             {isMfaChallenge ? 'Enter 2FA Code' : (isSignUp ? 'Create Account' : 'Welcome Back')}
           </h1>
           <p className="text-gray-400">
-            {isMfaChallenge ? 'Enter the code from your authenticator app.' : (isSignUp ? 'Sign up for SecurePass' : 'Sign in to your account')}
+            {isMfaChallenge ? 'Enter the code from your authenticator app.' : (isSignUp ? 'Sign up for PW Shield' : 'Sign in to your account')}
           </p>
         </div>
 
@@ -147,8 +210,43 @@ const AuthPage = () => {
         ) : (
           <>
             <form onSubmit={isSignUp ? handleSignUpSubmit : handleLoginSubmit} className="space-y-4">
+              {isSignUp && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <label className="text-sm text-gray-300">First Name</label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                        <Input
+                          type="text"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          className="glass-input pl-10 bg-white/5 border-white/20 text-white"
+                          placeholder="First name"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm text-gray-300">Last Name</label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                        <Input
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          className="glass-input pl-10 bg-white/5 border-white/20 text-white"
+                          placeholder="Last name"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
               <div className="space-y-2">
-                <label className="text-sm text-gray-300">Email</label>
+                <label className="text-sm text-gray-300">Email Address</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                   <Input
@@ -156,7 +254,7 @@ const AuthPage = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="glass-input pl-10 bg-white/5 border-white/20 text-white"
-                    placeholder="Enter your email"
+                    placeholder="Enter your email address"
                     required
                   />
                 </div>
@@ -182,6 +280,9 @@ const AuthPage = () => {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                {isSignUp && password && (
+                  <PasswordStrengthIndicator password={password} />
+                )}
               </div>
 
               <Button
