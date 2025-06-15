@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Settings, Clock, Shield } from 'lucide-react';
@@ -134,30 +135,6 @@ const CertificateVault: React.FC<CertificateVaultProps> = ({
                 : groups.find(g => g.id === selectedGroup)?.name || 'Certificates'
               }
             </h2>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => setShowTimerSettings(true)}
-                variant="outline"
-                className="border-white/20 text-gray-300 hover:bg-gray-700"
-              >
-                <Clock className="w-4 h-4 mr-2" />
-                Timer
-              </Button>
-              <Button
-                onClick={exportCertificates}
-                variant="outline"
-                className="border-white/20 text-gray-300 hover:bg-gray-700"
-              >
-                Export
-              </Button>
-              <Button
-                onClick={handleShowForm}
-                className="glass-button bg-green-600 hover:bg-green-700 text-white"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Certificate
-              </Button>
-            </div>
           </div>
 
           {showForm && (
