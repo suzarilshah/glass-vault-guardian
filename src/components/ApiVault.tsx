@@ -192,7 +192,7 @@ const ApiVault: React.FC<ApiVaultProps> = ({
           setShowGroupManager(false);
           fetchGroups();
         }}
-        groupType="api"
+        type="api"
       />
 
       {showTimerSettings && (

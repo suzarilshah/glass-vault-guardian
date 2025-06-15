@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Settings, Clock, Shield } from 'lucide-react';
@@ -121,9 +120,9 @@ const CertificateVault: React.FC<CertificateVaultProps> = ({
             }))}
             selectedGroup={selectedGroup}
             ungroupedCount={ungroupedCount}
-            totalCount={entries.length}
+            totalEntries={entries.length}
             onGroupSelect={setSelectedGroup}
-            onShowGroupManager={() => setShowGroupManager(true)}
+            groupStats={groupStats}
           />
         </div>
 

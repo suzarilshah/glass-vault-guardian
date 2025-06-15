@@ -177,7 +177,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ masterPassword: propMaste
           setShowGroupManager(false);
           fetchGroups();
         }}
-        groupType="password"
+        type="password"
       />
     </div>
   );
