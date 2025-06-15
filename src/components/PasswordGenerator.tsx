@@ -76,7 +76,7 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
             value="analyzer" 
             className="text-white data-[state=active]:bg-white/10 data-[state=active]:text-green-400"
           >
-            Password Analyzer
+            AI Password Analyzer [NEW]
           </TabsTrigger>
         </TabsList>
 

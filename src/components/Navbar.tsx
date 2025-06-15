@@ -27,7 +27,7 @@ const Navbar: React.FC<NavbarProps> = ({ onShowVault, onShowApiVault, currentVie
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
             <Shield className="w-6 h-6 text-green-400" />
-            <h1 className="text-xl font-bold text-white">PWShield</h1>
+            <h1 className="text-xl font-bold text-white">AI PW Shield</h1>
           </div>
           
           {user && (

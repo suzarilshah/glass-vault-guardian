@@ -23,15 +23,24 @@ interface AIAnalysisDisplayProps {
 
 const AIAnalysisDisplay: React.FC<AIAnalysisDisplayProps> = ({ analysis, onSavePassword }) => {
   const { toast } = useToast();
-  const [showCrossCheck, setShowCrossCheck] = useState(false);
-  const [showImprovements, setShowImprovements] = useState(false);
+  const [showCrossCheck, setShowCrossCheck] = useState(true); // Default to true (expanded)
+  const [showImprovements, setShowImprovements] = useState(true); // Default to true (expanded)
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Copied!",
-      description: "Password copied to clipboard",
-    });
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied!",
+        description: "Password copied to clipboard",
+      });
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      toast({
+        title: "Error",
+        description: "Failed to copy password to clipboard",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleSavePassword = (password: string) => {

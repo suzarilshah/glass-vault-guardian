@@ -51,9 +51,9 @@ const Index = () => {
             <div className="space-y-6">
               <div className="text-center mb-8">
                 <h1 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-white to-green-400 bg-clip-text text-transparent">
-                  PWShield
+                  AI PW Shield
                 </h1>
-                <p className="text-gray-400">Your trusted password security companion</p>
+                <p className="text-gray-400">AI-powered password security and protection</p>
               </div>
               <PasswordGenerator />
             </div>
