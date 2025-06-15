@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useApiVault } from '@/hooks/useApiVault';
 import VaultLockedScreen from '@/components/vault/VaultLockedScreen';
@@ -175,6 +174,7 @@ const ApiVault: React.FC<ApiVaultProps> = ({
           setShowGroupManager(false);
           fetchGroups();
         }}
+        groupType="api"
       />
 
       {showTimerSettings && (
