@@ -1,9 +1,10 @@
+
 import { useState, useCallback } from 'react';
 import { ApiEntry, ApiFormData } from '@/types/apiVault';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { encryptData, decryptData } from '@/utils/encryption';
+import { encryptPassword, decryptPassword } from '@/utils/encryption';
 
 interface UseApiVaultOperationsProps {
   masterPassword: string | null;
@@ -33,7 +34,14 @@ export const useApiVaultOperations = ({
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setEntries(data || []);
+      
+      // Ensure environment field has correct type
+      const typedData = (data || []).map(entry => ({
+        ...entry,
+        environment: (entry.environment as 'development' | 'staging' | 'production') || 'production'
+      })) as ApiEntry[];
+      
+      setEntries(typedData);
     } catch (error) {
       console.error('Error fetching API entries:', error);
       toast({
@@ -49,7 +57,7 @@ export const useApiVaultOperations = ({
 
     try {
       const { data, error } = await supabase
-        .from('api_groups') // Changed from 'password_groups' to 'api_groups'
+        .from('api_groups')
         .select('*')
         .order('name');
 
@@ -75,8 +83,8 @@ export const useApiVaultOperations = ({
     } = formData;
 
     try {
-      const apiKeyEncrypted = await encryptData(api_key, masterPassword);
-      const apiSecretEncrypted = api_secret ? await encryptData(api_secret, masterPassword) : null;
+      const apiKeyEncrypted = encryptPassword(api_key, masterPassword);
+      const apiSecretEncrypted = api_secret ? encryptPassword(api_secret, masterPassword) : null;
 
       const expiresAt = expiration_days ? new Date(Date.now() + parseInt(expiration_days) * 24 * 60 * 60 * 1000).toISOString() : null;
 
@@ -189,7 +197,7 @@ export const useApiVaultOperations = ({
     if (!masterPassword) return;
 
     try {
-      const decryptedApiKey = await decryptData(entry.api_key_encrypted, masterPassword);
+      const decryptedApiKey = decryptPassword(entry.api_key_encrypted, masterPassword);
       navigator.clipboard.writeText(decryptedApiKey);
       toast({
         title: "Copied!",
