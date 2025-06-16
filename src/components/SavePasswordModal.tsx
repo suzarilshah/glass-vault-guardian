@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,8 +66,18 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
       }
 
       if (data) {
-        // Filter out any groups with empty string IDs to prevent the Select error
-        const validGroups = data.filter(group => group.id && group.id.trim() !== '');
+        console.log('Raw groups data:', data);
+        // More comprehensive filtering to ensure no empty or invalid IDs
+        const validGroups = data.filter(group => {
+          const hasValidId = group.id && 
+                            typeof group.id === 'string' && 
+                            group.id.trim() !== '' && 
+                            group.id !== 'null' && 
+                            group.id !== 'undefined';
+          console.log(`Group ${group.name} - ID: "${group.id}" - Valid: ${hasValidId}`);
+          return hasValidId;
+        });
+        console.log('Valid groups after filtering:', validGroups);
         setGroups(validGroups);
       }
     } catch (error) {
@@ -327,11 +336,16 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
                 <SelectItem value="NO_GROUP" className="text-white hover:bg-white/10">
                   (No Group)
                 </SelectItem>
-                {groups.map((group) => (
-                  <SelectItem key={group.id} value={group.id} className="text-white hover:bg-white/10">
-                    {group.name}
-                  </SelectItem>
-                ))}
+                {groups
+                  .filter(group => group.id && group.id.trim() !== '' && group.id !== 'null' && group.id !== 'undefined')
+                  .map((group) => {
+                    console.log(`Rendering SelectItem for group: ${group.name} with ID: "${group.id}"`);
+                    return (
+                      <SelectItem key={group.id} value={group.id} className="text-white hover:bg-white/10">
+                        {group.name}
+                      </SelectItem>
+                    );
+                  })}
               </SelectContent>
             </Select>
           </div>
