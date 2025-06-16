@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -5,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, User, Mail, Save, AlertTriangle, Lock, Key, Shield, Settings } from 'lucide-react';
+import { ArrowLeft, User, Mail, Save, AlertTriangle, Lock, Key, Shield, Settings, Phone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +26,7 @@ const ProfilePage = () => {
     first_name: '',
     last_name: '',
     email: '',
+    phone_number: '',
   });
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -65,7 +67,7 @@ const ProfilePage = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('first_name, last_name, email')
+        .select('first_name, last_name, email, phone_number')
         .eq('id', user.id)
         .single();
 
@@ -79,17 +81,27 @@ const ProfilePage = () => {
           first_name: data.first_name || '',
           last_name: data.last_name || '',
           email: data.email || user.email || '',
+          phone_number: data.phone_number || '',
         });
       } else {
         setProfile({
           first_name: '',
           last_name: '',
           email: user.email || '',
+          phone_number: '',
         });
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
+  };
+
+  const validatePhoneNumber = (phone: string) => {
+    if (!phone.trim()) return true; // Optional field
+    
+    // Basic phone number validation - allows international formats
+    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
   };
 
   const validatePassword = (password: string, firstName: string = '', lastName: string = '') => {
@@ -142,6 +154,16 @@ const ProfilePage = () => {
   const handleSave = async () => {
     if (!user) return;
 
+    // Validate phone number
+    if (profile.phone_number && !validatePhoneNumber(profile.phone_number)) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Please enter a valid phone number",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const { error } = await supabase
@@ -151,6 +173,7 @@ const ProfilePage = () => {
           first_name: profile.first_name,
           last_name: profile.last_name,
           email: profile.email,
+          phone_number: profile.phone_number,
           updated_at: new Date().toISOString(),
         });
 
@@ -442,6 +465,22 @@ const ProfilePage = () => {
                   </div>
                 </div>
 
+                <div>
+                  <Label htmlFor="phone" className="text-gray-300">Phone Number</Label>
+                  <p className="text-sm text-gray-400 mb-2">Optional - May be used for future 2FA implementation or account recovery</p>
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-gray-400" />
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={profile.phone_number}
+                      onChange={(e) => setProfile(prev => ({ ...prev, phone_number: e.target.value }))}
+                      className="glass-input bg-white/5 border-white/20 text-white"
+                      placeholder="Enter your phone number (e.g., +1234567890)"
+                    />
+                  </div>
+                </div>
+
                 <Button
                   onClick={handleSave}
                   disabled={isLoading}
@@ -475,10 +514,24 @@ const ProfilePage = () => {
                 </Button>
               </div>
 
+              <div className="mb-4 p-4 bg-amber-900/20 border border-amber-600/30 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <Shield className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="text-amber-400 font-medium mb-1">Security Recommendation</h3>
+                    <p className="text-amber-200 text-sm">
+                      Your account password must be different from your master password for enhanced security. 
+                      Using the same password for both would compromise the security model of the password manager.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {showPasswordSection && (
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="newPassword" className="text-gray-300">New Password</Label>
+                    <p className="text-sm text-gray-400 mb-2">Must be different from your master password</p>
                     <Input
                       id="newPassword"
                       type="password"
@@ -589,10 +642,38 @@ const ProfilePage = () => {
                 <h2 className="text-xl font-semibold text-red-400">Danger Zone</h2>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-6">
+                <div className="p-4 bg-red-900/30 border border-red-600/50 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-6 h-6 text-red-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h3 className="text-red-400 font-bold text-lg mb-2">⚠️ CRITICAL WARNING ⚠️</h3>
+                      <p className="text-red-200 font-medium mb-3">
+                        ACCOUNT DEACTIVATION IS COMPLETELY IRREVERSIBLE AND PERMANENT
+                      </p>
+                      <div className="text-red-100 text-sm space-y-2">
+                        <p><strong>What will be permanently deleted:</strong></p>
+                        <ul className="list-disc ml-5 space-y-1">
+                          <li>Your user account and all authentication data</li>
+                          <li>ALL stored passwords and password history</li>
+                          <li>ALL API credentials and API key histories</li>
+                          <li>ALL certificates and certificate histories</li>
+                          <li>ALL password groups and organizational data</li>
+                          <li>Your profile information and settings</li>
+                          <li>Master password configurations</li>
+                        </ul>
+                        <p className="mt-3 font-medium text-red-200">
+                          <strong>This action cannot be undone. There is no recovery process. 
+                          Your data will be gone forever.</strong>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <p className="text-gray-300 text-sm">
-                  Once you deactivate your account, all your data will be marked as inactive and you will be signed out. 
-                  This action is reversible by contacting support.
+                  Once you deactivate your account, you will be immediately signed out and all your data 
+                  will be permanently erased from our systems. Consider exporting your data before proceeding.
                 </p>
 
                 <Button
@@ -601,7 +682,7 @@ const ProfilePage = () => {
                   disabled={deletingAccount}
                 >
                   <AlertTriangle className="w-4 h-4 mr-2" />
-                  {deletingAccount ? "Deleting Account..." : "Deactivate Account"}
+                  {deletingAccount ? "Deleting Account..." : "Permanently Delete Account"}
                 </Button>
               </div>
             </Card>
@@ -613,9 +694,9 @@ const ProfilePage = () => {
         isOpen={showDeactivateConfirm}
         onClose={() => setShowDeactivateConfirm(false)}
         onConfirm={handleDeactivateAccount}
-        title="Deactivate Account"
-        message="Are you sure you want to deactivate your account? You will be signed out and your data will be marked as inactive. Contact support to reactivate your account."
-        confirmText="Deactivate Account"
+        title="Permanently Delete Account"
+        message="Are you absolutely certain you want to permanently delete your account? This action is IRREVERSIBLE and will permanently destroy all your passwords, API credentials, certificates, and account data. There is no way to recover your account or data after deletion."
+        confirmText="Yes, Permanently Delete My Account"
         isDangerous={true}
       />
     </div>

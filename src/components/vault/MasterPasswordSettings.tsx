@@ -4,101 +4,94 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Key, Lock } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Key, Shield, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { hashMasterPassword } from '@/utils/encryption';
+import { useToast } from '@/hooks/use-toast';
 import AdvancedPasswordStrengthIndicator from './AdvancedPasswordStrengthIndicator';
 import { analyzePasswordStrength } from '@/utils/passwordStrength';
+import bcrypt from 'crypto-js';
 
 interface MasterPasswordSettingsProps {
   profile: {
     first_name: string;
     last_name: string;
+    email: string;
+    phone_number?: string;
   };
 }
 
 const MasterPasswordSettings: React.FC<MasterPasswordSettingsProps> = ({ profile }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [useSameMasterPassword, setUseSameMasterPassword] = useState(true);
-  const [showPasswordForm, setShowPasswordForm] = useState(false);
-  const [passwords, setPasswords] = useState({
-    unified: '',
-    password_vault: '',
-    api_vault: '',
-    certificate_vault: '',
-  });
-  const [confirmPasswords, setConfirmPasswords] = useState({
-    unified: '',
-    password_vault: '',
-    api_vault: '',
-    certificate_vault: '',
-  });
+  const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [hasMasterPassword, setHasMasterPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentMasterPassword: '',
+    newMasterPassword: '',
+    confirmMasterPassword: '',
+  });
 
   useEffect(() => {
-    fetchMasterPasswordSettings();
+    checkMasterPasswordExists();
   }, [user]);
 
-  const fetchMasterPasswordSettings = async () => {
+  const checkMasterPasswordExists = async () => {
     if (!user) return;
 
     try {
       const { data, error } = await supabase
         .from('user_master_passwords')
-        .select('vault_type, use_unified_password')
-        .eq('user_id', user.id);
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
 
-      if (error) {
-        console.error('Error fetching master password settings:', error);
-        return;
-      }
-
-      if (data && data.length > 0) {
-        const hasUnified = data.some(item => item.use_unified_password);
-        setUseSameMasterPassword(hasUnified);
-      }
+      setHasMasterPassword(!!data && !error);
     } catch (error) {
-      console.error('Error fetching master password settings:', error);
+      console.error('Error checking master password:', error);
     }
   };
 
-  const validatePassword = (password: string) => {
+  const validateMasterPassword = (password: string, firstName: string = '', lastName: string = '') => {
     const errors = [];
     
-    if (password.length <= 10) {
-      errors.push('Password must be more than 10 characters');
+    // Check length
+    if (password.length <= 12) {
+      errors.push('Master password must be more than 12 characters');
     }
     
+    // Check for uppercase
     if (!/[A-Z]/.test(password)) {
-      errors.push('Password must contain at least one uppercase letter');
+      errors.push('Master password must contain at least one uppercase letter');
     }
     
+    // Check for lowercase
     if (!/[a-z]/.test(password)) {
-      errors.push('Password must contain at least one lowercase letter');
+      errors.push('Master password must contain at least one lowercase letter');
     }
     
+    // Check for special characters
     if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\?]/.test(password)) {
-      errors.push('Password must contain at least one special character');
+      errors.push('Master password must contain at least one special character');
     }
     
+    // Check for alphanumeric (numbers)
     if (!/[0-9]/.test(password)) {
-      errors.push('Password must contain at least one number');
+      errors.push('Master password must contain at least one number');
     }
     
+    // Check for personal names
     const lowerPassword = password.toLowerCase();
-    const lowerFirstName = profile.first_name?.toLowerCase() || '';
-    const lowerLastName = profile.last_name?.toLowerCase() || '';
+    const lowerFirstName = firstName.toLowerCase();
+    const lowerLastName = lastName.toLowerCase();
     
     if (lowerFirstName && lowerPassword.includes(lowerFirstName)) {
-      errors.push('Password should not contain your first name');
+      errors.push('Master password should not contain your first name');
     }
     
     if (lowerLastName && lowerPassword.includes(lowerLastName)) {
-      errors.push('Password should not contain your last name');
+      errors.push('Master password should not contain your last name');
     }
     
     return {
@@ -107,152 +100,76 @@ const MasterPasswordSettings: React.FC<MasterPasswordSettingsProps> = ({ profile
     };
   };
 
-  const handleSaveMasterPasswords = async () => {
-    if (!user) return;
+  const handleMasterPasswordChange = async () => {
+    const validation = validateMasterPassword(passwordData.newMasterPassword, profile.first_name, profile.last_name);
+    
+    if (!validation.isValid) {
+      toast({
+        title: "Master Password Validation Failed",
+        description: validation.errors.join('. '),
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (passwordData.newMasterPassword !== passwordData.confirmMasterPassword) {
+      toast({
+        title: "Error",
+        description: "New master passwords do not match",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const strengthResult = analyzePasswordStrength(passwordData.newMasterPassword);
+    if (strengthResult.score < 4) {
+      toast({
+        title: "Weak Master Password",
+        description: "Master password must be very strong for security",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setIsLoading(true);
     try {
-      // Delete existing master passwords
-      await supabase
+      const hashedPassword = bcrypt.SHA256(passwordData.newMasterPassword).toString();
+      
+      const { error } = await supabase
         .from('user_master_passwords')
-        .delete()
-        .eq('user_id', user.id);
+        .upsert({
+          user_id: user?.id,
+          master_password_hash: hashedPassword,
+          vault_type: 'password',
+          use_unified_password: true,
+          updated_at: new Date().toISOString(),
+        });
 
-      if (useSameMasterPassword) {
-        // Validate unified password
-        const validation = validatePassword(passwords.unified);
-        if (!validation.isValid) {
-          toast({
-            title: "Password Validation Failed",
-            description: validation.errors.join('. '),
-            variant: "destructive"
-          });
-          return;
-        }
-
-        if (passwords.unified !== confirmPasswords.unified) {
-          toast({
-            title: "Error",
-            description: "Passwords do not match",
-            variant: "destructive"
-          });
-          return;
-        }
-
-        const strengthResult = analyzePasswordStrength(passwords.unified);
-        if (strengthResult.isWeak) {
-          toast({
-            title: "Weak Password",
-            description: "Please choose a stronger password",
-            variant: "destructive"
-          });
-          return;
-        }
-
-        const hashedPassword = hashMasterPassword(passwords.unified);
-        
-        // Insert unified password for all vault types
-        const vaultTypes = ['password', 'api', 'certificate'];
-        for (const vaultType of vaultTypes) {
-          const { error } = await supabase
-            .from('user_master_passwords')
-            .insert({
-              user_id: user.id,
-              master_password_hash: hashedPassword,
-              vault_type: vaultType,
-              use_unified_password: true
-            });
-
-          if (error) {
-            throw error;
-          }
-        }
-      } else {
-        // Validate and save separate passwords for each vault
-        const vaultTypes = [
-          { type: 'password', password: passwords.password_vault, confirm: confirmPasswords.password_vault },
-          { type: 'api', password: passwords.api_vault, confirm: confirmPasswords.api_vault },
-          { type: 'certificate', password: passwords.certificate_vault, confirm: confirmPasswords.certificate_vault }
-        ];
-
-        for (const vault of vaultTypes) {
-          if (!vault.password) {
-            toast({
-              title: "Error",
-              description: `${vault.type} vault password is required`,
-              variant: "destructive"
-            });
-            return;
-          }
-
-          const validation = validatePassword(vault.password);
-          if (!validation.isValid) {
-            toast({
-              title: `${vault.type} Vault Password Validation Failed`,
-              description: validation.errors.join('. '),
-              variant: "destructive"
-            });
-            return;
-          }
-
-          if (vault.password !== vault.confirm) {
-            toast({
-              title: "Error",
-              description: `${vault.type} vault passwords do not match`,
-              variant: "destructive"
-            });
-            return;
-          }
-
-          const strengthResult = analyzePasswordStrength(vault.password);
-          if (strengthResult.isWeak) {
-            toast({
-              title: "Weak Password",
-              description: `Please choose a stronger ${vault.type} vault password`,
-              variant: "destructive"
-            });
-            return;
-          }
-
-          const hashedPassword = hashMasterPassword(vault.password);
-          const { error } = await supabase
-            .from('user_master_passwords')
-            .insert({
-              user_id: user.id,
-              master_password_hash: hashedPassword,
-              vault_type: vault.type,
-              use_unified_password: false
-            });
-
-          if (error) {
-            throw error;
-          }
-        }
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to update master password",
+          variant: "destructive"
+        });
+        return;
       }
 
       toast({
         title: "Success",
-        description: "Master password settings updated successfully"
+        description: "Master password updated successfully"
       });
-
-      setShowPasswordForm(false);
-      setPasswords({
-        unified: '',
-        password_vault: '',
-        api_vault: '',
-        certificate_vault: '',
+      
+      setPasswordData({
+        currentMasterPassword: '',
+        newMasterPassword: '',
+        confirmMasterPassword: '',
       });
-      setConfirmPasswords({
-        unified: '',
-        password_vault: '',
-        api_vault: '',
-        certificate_vault: '',
-      });
+      setShowPasswordSection(false);
+      setHasMasterPassword(true);
     } catch (error) {
-      console.error('Error updating master passwords:', error);
       toast({
         title: "Error",
-        description: "Failed to update master password settings",
+        description: "Failed to update master password",
         variant: "destructive"
       });
     } finally {
@@ -262,190 +179,96 @@ const MasterPasswordSettings: React.FC<MasterPasswordSettingsProps> = ({ profile
 
   return (
     <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
-      <div className="flex items-center gap-2 mb-4">
-        <Key className="w-5 h-5 text-white" />
-        <h2 className="text-xl font-semibold text-white">Master Password Configuration</h2>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Key className="w-5 h-5 text-white" />
+          <h2 className="text-xl font-semibold text-white">Master Password</h2>
+        </div>
+        <Button
+          onClick={() => setShowPasswordSection(!showPasswordSection)}
+          variant="outline"
+          size="sm"
+          className="bg-white border-blue-400 text-blue-600 hover:bg-blue-50 hover:text-blue-700 border font-semibold"
+        >
+          {showPasswordSection ? 'Cancel' : hasMasterPassword ? 'Change Master Password' : 'Set Master Password'}
+        </Button>
       </div>
 
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <Label className="text-gray-300">Use same master password for all vaults</Label>
-            <p className="text-sm text-gray-400">
-              If enabled, you'll use one password for Password, API, and Certificate vaults
+      <div className="mb-4 p-4 bg-blue-900/20 border border-blue-600/30 rounded-lg">
+        <div className="flex items-start gap-3">
+          <Shield className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="text-blue-400 font-medium mb-1">Security Recommendation</h3>
+            <p className="text-blue-200 text-sm">
+              Your master password should be different from your account password for enhanced security. 
+              The master password protects all your stored passwords, API keys, and certificates. 
+              Choose a strong, unique password that you can remember but others cannot guess.
             </p>
           </div>
-          <Switch
-            checked={useSameMasterPassword}
-            onCheckedChange={setUseSameMasterPassword}
-          />
         </div>
+      </div>
 
-        <div className="flex justify-between items-center">
-          <p className="text-gray-300">
-            {useSameMasterPassword 
-              ? 'Currently using unified master password'
-              : 'Currently using separate passwords for each vault'
-            }
-          </p>
+      {showPasswordSection && (
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="newMasterPassword" className="text-gray-300">
+              {hasMasterPassword ? 'New Master Password' : 'Master Password'}
+            </Label>
+            <p className="text-sm text-gray-400 mb-2">
+              Must be different from your account password and very strong (minimum 12 characters)
+            </p>
+            <Input
+              id="newMasterPassword"
+              type="password"
+              value={passwordData.newMasterPassword}
+              onChange={(e) => setPasswordData(prev => ({ ...prev, newMasterPassword: e.target.value }))}
+              className="glass-input bg-white/5 border-white/20 text-white"
+              placeholder="Enter master password"
+            />
+            <AdvancedPasswordStrengthIndicator 
+              password={passwordData.newMasterPassword} 
+              showDetailed={true}
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="confirmMasterPassword" className="text-gray-300">
+              Confirm Master Password
+            </Label>
+            <Input
+              id="confirmMasterPassword"
+              type="password"
+              value={passwordData.confirmMasterPassword}
+              onChange={(e) => setPasswordData(prev => ({ ...prev, confirmMasterPassword: e.target.value }))}
+              className="glass-input bg-white/5 border-white/20 text-white"
+              placeholder="Confirm master password"
+            />
+          </div>
+          
           <Button
-            onClick={() => setShowPasswordForm(!showPasswordForm)}
-            variant="outline"
-            size="sm"
-            className="bg-white border-blue-400 text-blue-600 hover:bg-blue-50 hover:text-blue-700 border font-semibold"
+            onClick={handleMasterPasswordChange}
+            disabled={isLoading}
+            className="bg-green-600 hover:bg-green-700 text-white"
           >
-            {showPasswordForm ? 'Cancel' : 'Update Passwords'}
+            {isLoading ? 'Updating...' : hasMasterPassword ? 'Update Master Password' : 'Set Master Password'}
           </Button>
         </div>
+      )}
 
-        {showPasswordForm && (
-          <div className="space-y-4 border-t border-white/10 pt-4">
-            {useSameMasterPassword ? (
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="unifiedPassword" className="text-gray-300">
-                    Master Password (for all vaults)
-                  </Label>
-                  <Input
-                    id="unifiedPassword"
-                    type="password"
-                    value={passwords.unified}
-                    onChange={(e) => setPasswords(prev => ({ ...prev, unified: e.target.value }))}
-                    className="glass-input bg-white/5 border-white/20 text-white"
-                    placeholder="Enter master password for all vaults"
-                  />
-                  <AdvancedPasswordStrengthIndicator 
-                    password={passwords.unified} 
-                    showDetailed={true}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="confirmUnifiedPassword" className="text-gray-300">
-                    Confirm Master Password
-                  </Label>
-                  <Input
-                    id="confirmUnifiedPassword"
-                    type="password"
-                    value={confirmPasswords.unified}
-                    onChange={(e) => setConfirmPasswords(prev => ({ ...prev, unified: e.target.value }))}
-                    className="glass-input bg-white/5 border-white/20 text-white"
-                    placeholder="Confirm master password"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-white flex items-center gap-2">
-                    <Lock className="w-4 h-4" />
-                    Password Vault Master Password
-                  </h3>
-                  <div>
-                    <Label htmlFor="passwordVaultPassword" className="text-gray-300">Password</Label>
-                    <Input
-                      id="passwordVaultPassword"
-                      type="password"
-                      value={passwords.password_vault}
-                      onChange={(e) => setPasswords(prev => ({ ...prev, password_vault: e.target.value }))}
-                      className="glass-input bg-white/5 border-white/20 text-white"
-                      placeholder="Enter password vault master password"
-                    />
-                    <AdvancedPasswordStrengthIndicator 
-                      password={passwords.password_vault} 
-                      showDetailed={true}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="confirmPasswordVaultPassword" className="text-gray-300">Confirm Password</Label>
-                    <Input
-                      id="confirmPasswordVaultPassword"
-                      type="password"
-                      value={confirmPasswords.password_vault}
-                      onChange={(e) => setConfirmPasswords(prev => ({ ...prev, password_vault: e.target.value }))}
-                      className="glass-input bg-white/5 border-white/20 text-white"
-                      placeholder="Confirm password"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-white flex items-center gap-2">
-                    <Key className="w-4 h-4" />
-                    API Vault Master Password
-                  </h3>
-                  <div>
-                    <Label htmlFor="apiVaultPassword" className="text-gray-300">Password</Label>
-                    <Input
-                      id="apiVaultPassword"
-                      type="password"
-                      value={passwords.api_vault}
-                      onChange={(e) => setPasswords(prev => ({ ...prev, api_vault: e.target.value }))}
-                      className="glass-input bg-white/5 border-white/20 text-white"
-                      placeholder="Enter API vault master password"
-                    />
-                    <AdvancedPasswordStrengthIndicator 
-                      password={passwords.api_vault} 
-                      showDetailed={true}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="confirmApiVaultPassword" className="text-gray-300">Confirm Password</Label>
-                    <Input
-                      id="confirmApiVaultPassword"
-                      type="password"
-                      value={confirmPasswords.api_vault}
-                      onChange={(e) => setConfirmPasswords(prev => ({ ...prev, api_vault: e.target.value }))}
-                      className="glass-input bg-white/5 border-white/20 text-white"
-                      placeholder="Confirm password"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-white flex items-center gap-2">
-                    <Lock className="w-4 h-4" />
-                    Certificate Vault Master Password
-                  </h3>
-                  <div>
-                    <Label htmlFor="certificateVaultPassword" className="text-gray-300">Password</Label>
-                    <Input
-                      id="certificateVaultPassword"
-                      type="password"
-                      value={passwords.certificate_vault}
-                      onChange={(e) => setPasswords(prev => ({ ...prev, certificate_vault: e.target.value }))}
-                      className="glass-input bg-white/5 border-white/20 text-white"
-                      placeholder="Enter certificate vault master password"
-                    />
-                    <AdvancedPasswordStrengthIndicator 
-                      password={passwords.certificate_vault} 
-                      showDetailed={true}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="confirmCertificateVaultPassword" className="text-gray-300">Confirm Password</Label>
-                    <Input
-                      id="confirmCertificateVaultPassword"
-                      type="password"
-                      value={confirmPasswords.certificate_vault}
-                      onChange={(e) => setConfirmPasswords(prev => ({ ...prev, certificate_vault: e.target.value }))}
-                      className="glass-input bg-white/5 border-white/20 text-white"
-                      placeholder="Confirm password"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <Button
-              onClick={handleSaveMasterPasswords}
-              disabled={isLoading}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              {isLoading ? 'Updating...' : 'Update Master Passwords'}
-            </Button>
+      {!showPasswordSection && !hasMasterPassword && (
+        <div className="p-4 bg-amber-900/20 border border-amber-600/30 rounded-lg">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <h3 className="text-amber-400 font-medium mb-1">Master Password Required</h3>
+              <p className="text-amber-200 text-sm">
+                You need to set up a master password to secure your vault. 
+                This password will encrypt all your stored data.
+              </p>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </Card>
   );
 };
