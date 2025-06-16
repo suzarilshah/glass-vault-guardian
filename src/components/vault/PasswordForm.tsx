@@ -34,6 +34,38 @@ const PasswordForm: React.FC<PasswordFormProps> = ({
 }) => {
   const [showPassword, setShowPassword] = useState(false);
 
+  // Helper function to ensure group ID is never empty for SelectItem
+  const getSafeGroupId = (group: any) => {
+    if (!group.id || typeof group.id !== 'string' || group.id.trim() === '') {
+      console.warn(`Invalid group ID detected for group: ${group.name}`, group);
+      return `fallback-${Date.now()}-${Math.random()}`;
+    }
+    return group.id;
+  };
+
+  // Filter out groups with invalid IDs
+  const validGroups = groups.filter(group => {
+    const hasValidId = group.id && 
+                      typeof group.id === 'string' && 
+                      group.id.trim().length > 0 && 
+                      group.id !== 'null' && 
+                      group.id !== 'undefined' &&
+                      group.id !== 'NaN';
+    return hasValidId && group.name && group.name.trim() !== '';
+  });
+
+  // Ensure we always have a valid, non-empty value for the Select
+  const getSelectValue = () => {
+    const groupId = formData.group_id;
+    // Return 'NO_GROUP' if group_id is empty, null, undefined, or just whitespace
+    if (!groupId || typeof groupId !== 'string' || groupId.trim() === '') {
+      return 'NO_GROUP';
+    }
+    // Return 'NO_GROUP' if the group_id doesn't exist in our valid groups list
+    const groupExists = validGroups.some(group => group.id === groupId);
+    return groupExists ? groupId : 'NO_GROUP';
+  };
+
   if (!showForm) return null;
 
   return (
@@ -129,17 +161,25 @@ const PasswordForm: React.FC<PasswordFormProps> = ({
         <div className="space-y-2">
           <Label htmlFor="group" className="text-gray-300 font-medium">Group (Optional)</Label>
           <p className="text-xs text-gray-400">Organize passwords by grouping them into categories (e.g., "Work", "Personal", "Banking")</p>
-          <Select value={formData.group_id} onValueChange={(value) => onFormDataChange({ group_id: value })}>
+          <Select 
+            value={getSelectValue()} 
+            onValueChange={(value) => onFormDataChange({ 
+              group_id: value === 'NO_GROUP' ? '' : value 
+            })}
+          >
             <SelectTrigger className="glass-input bg-white/5 border-white/20 text-white">
               <SelectValue placeholder="Select a group" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">No Group</SelectItem>
-              {groups.map((group) => (
-                <SelectItem key={group.id} value={group.id}>
-                  {group.name}
-                </SelectItem>
-              ))}
+              <SelectItem value="NO_GROUP">No Group</SelectItem>
+              {validGroups.map((group) => {
+                const safeId = getSafeGroupId(group);
+                return (
+                  <SelectItem key={safeId} value={safeId}>
+                    {group.name}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
