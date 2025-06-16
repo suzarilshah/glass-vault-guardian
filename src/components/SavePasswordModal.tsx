@@ -163,7 +163,7 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
         password_encrypted: password, // Password should already be encrypted
         website: formData.website.trim(),
         notes: formData.notes.trim(),
-        group_id: formData.group_id === 'NO_GROUP' ? null : formData.group_id,
+        group_id: formData.group_id === 'NO_GROUP' ? null : formData.group_id || null,
         expires_at: expiresAt,
         is_expired: false
       };
