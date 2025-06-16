@@ -241,13 +241,15 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
     return groupExists ? groupId : 'NO_GROUP';
   };
 
-  // Helper function to ensure group ID is never empty for SelectItem
+  // Helper function to ensure group ID is NEVER empty for SelectItem - force a fallback
   const getSafeGroupId = (group: PasswordGroup) => {
-    if (!group.id || typeof group.id !== 'string' || group.id.trim() === '') {
-      console.warn(`Invalid group ID detected for group: ${group.name}`, group);
-      return `fallback-${Date.now()}-${Math.random()}`;
+    const id = group.id;
+    // Triple check that we never return an empty string
+    if (!id || typeof id !== 'string' || id.trim() === '' || id === 'null' || id === 'undefined') {
+      console.error(`Critical: Empty group ID detected for group: ${group.name}`, group);
+      return `FALLBACK_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
-    return group.id;
+    return id.trim();
   };
 
   return (
@@ -358,14 +360,19 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
                   (No Group)
                 </SelectItem>
                 {groups.map((group) => {
-                    const safeId = getSafeGroupId(group);
-                    console.log(`Rendering SelectItem for group: ${group.name} with safe ID: "${safeId}"`);
-                    return (
-                      <SelectItem key={safeId} value={safeId} className="text-white hover:bg-white/10">
-                        {group.name}
-                      </SelectItem>
-                    );
-                  })}
+                  const safeId = getSafeGroupId(group);
+                  console.log(`Rendering SelectItem for group: ${group.name} with safe ID: "${safeId}"`);
+                  // Double check that safeId is never empty before rendering
+                  if (!safeId || safeId.trim() === '') {
+                    console.error('Skipping group with empty safe ID:', group);
+                    return null;
+                  }
+                  return (
+                    <SelectItem key={safeId} value={safeId} className="text-white hover:bg-white/10">
+                      {group.name}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
