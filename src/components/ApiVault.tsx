@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useApiVault } from '@/hooks/useApiVault';
 import VaultLockedScreen from '@/components/vault/VaultLockedScreen';
@@ -21,6 +22,7 @@ interface ApiVaultProps {
   useUnifiedPassword?: boolean;
   unifiedLockTimeoutMinutes?: number;
   onUnifiedTimeoutChange?: (minutes: number) => void;
+  onUnifiedMasterPasswordClear?: () => void;
 }
 
 const ApiVault: React.FC<ApiVaultProps> = ({ 
@@ -28,7 +30,8 @@ const ApiVault: React.FC<ApiVaultProps> = ({
   onMasterPasswordSet,
   useUnifiedPassword = false,
   unifiedLockTimeoutMinutes,
-  onUnifiedTimeoutChange
+  onUnifiedTimeoutChange,
+  onUnifiedMasterPasswordClear
 }) => {
   const [masterPassword, setMasterPassword] = useState<string | null>(propMasterPassword);
   const [showMasterModal, setShowMasterModal] = useState(!masterPassword);
@@ -75,6 +78,10 @@ const ApiVault: React.FC<ApiVaultProps> = ({
     setEditingEntry,
     onMasterPasswordSet,
     setVisiblePasswords: undefined,
+    unifiedLockTimeoutMinutes,
+    onUnifiedTimeoutChange,
+    onUnifiedMasterPasswordClear,
+    useUnifiedPassword,
   });
 
   const { downloadTemplate, importData } = useApiVaultImport({

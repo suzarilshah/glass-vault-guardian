@@ -9,7 +9,6 @@ import CertificateEntryCard from './vault/CertificateEntryCard';
 import GroupSidebar from './vault/GroupSidebar';
 import VaultHeader from './vault/VaultHeader';
 import VaultLockedScreen from './vault/VaultLockedScreen';
-import TimerSettings from './vault/TimerSettings';
 import GroupManager from './GroupManager';
 import ExpiredCertificatesAlert from './vault/ExpiredCertificatesAlert';
 
@@ -19,6 +18,7 @@ interface CertificateVaultProps {
   useUnifiedPassword?: boolean;
   unifiedLockTimeoutMinutes?: number;
   onUnifiedTimeoutChange?: (minutes: number) => void;
+  onUnifiedMasterPasswordClear?: () => void;
 }
 
 const CertificateVault: React.FC<CertificateVaultProps> = ({ 
@@ -26,7 +26,8 @@ const CertificateVault: React.FC<CertificateVaultProps> = ({
   onMasterPasswordSet,
   useUnifiedPassword = false,
   unifiedLockTimeoutMinutes,
-  onUnifiedTimeoutChange
+  onUnifiedTimeoutChange,
+  onUnifiedMasterPasswordClear
 }) => {
   const {
     entries,
@@ -37,7 +38,6 @@ const CertificateVault: React.FC<CertificateVaultProps> = ({
     editingEntry,
     showForm,
     showGroupManager,
-    showTimerSettings,
     selectedGroup,
     lockTimeoutMinutes,
     formData,
@@ -46,7 +46,6 @@ const CertificateVault: React.FC<CertificateVaultProps> = ({
     setEditingEntry,
     setShowForm,
     setShowGroupManager,
-    setShowTimerSettings,
     setSelectedGroup,
     setFormData,
     handleMasterPasswordSubmit,
@@ -67,7 +66,8 @@ const CertificateVault: React.FC<CertificateVaultProps> = ({
     onMasterPasswordSet,
     useUnifiedPassword,
     unifiedLockTimeoutMinutes,
-    onUnifiedTimeoutChange
+    onUnifiedTimeoutChange,
+    onUnifiedMasterPasswordClear
   });
 
   if (!masterPassword) {
@@ -108,7 +108,7 @@ const CertificateVault: React.FC<CertificateVaultProps> = ({
         remainingTime={remainingTime}
         lockTimeoutMinutes={effectiveLockTimeoutMinutes}
         onLockVault={manualLockVault}
-        onShowTimerSettings={() => setShowTimerSettings(true)}
+        onShowTimerSettings={() => {}}
         onShowGroupManager={() => setShowGroupManager(true)}
         onExportPasswords={exportCertificates}
         onShowForm={handleShowForm}
@@ -212,13 +212,6 @@ const CertificateVault: React.FC<CertificateVaultProps> = ({
         onClose={() => setShowGroupManager(false)}
         onGroupsChanged={fetchGroups}
         type="certificate"
-      />
-
-      <TimerSettings
-        isOpen={showTimerSettings}
-        onClose={() => setShowTimerSettings(false)}
-        lockTimeoutMinutes={effectiveLockTimeoutMinutes}
-        onTimeoutChange={effectiveHandleTimeoutChange}
       />
     </div>
   );

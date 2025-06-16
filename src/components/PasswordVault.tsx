@@ -1,3 +1,4 @@
+
 import React, { useCallback } from 'react';
 import GroupManager from './GroupManager';
 import VaultHeader from './vault/VaultHeader';
@@ -17,6 +18,7 @@ interface PasswordVaultProps {
   useUnifiedPassword?: boolean;
   unifiedLockTimeoutMinutes?: number;
   onUnifiedTimeoutChange?: (minutes: number) => void;
+  onUnifiedMasterPasswordClear?: () => void;
 }
 
 const PasswordVault: React.FC<PasswordVaultProps> = ({ 
@@ -24,7 +26,8 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({
   onMasterPasswordSet,
   useUnifiedPassword = false,
   unifiedLockTimeoutMinutes,
-  onUnifiedTimeoutChange
+  onUnifiedTimeoutChange,
+  onUnifiedMasterPasswordClear
 }) => {
   const {
     entries,
@@ -72,7 +75,8 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({
     onMasterPasswordSet,
     useUnifiedPassword,
     unifiedLockTimeoutMinutes,
-    onUnifiedTimeoutChange
+    onUnifiedTimeoutChange,
+    onUnifiedMasterPasswordClear
   });
 
   const { downloadTemplate, importData } = usePasswordVaultImport({

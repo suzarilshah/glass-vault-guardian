@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +13,7 @@ interface UseCertificateVaultProps {
   useUnifiedPassword?: boolean;
   unifiedLockTimeoutMinutes?: number;
   onUnifiedTimeoutChange?: (minutes: number) => void;
+  onUnifiedMasterPasswordClear?: () => void;
 }
 
 export const useCertificateVault = ({ 
@@ -19,7 +21,8 @@ export const useCertificateVault = ({
   onMasterPasswordSet,
   useUnifiedPassword = false,
   unifiedLockTimeoutMinutes,
-  onUnifiedTimeoutChange
+  onUnifiedTimeoutChange,
+  onUnifiedMasterPasswordClear
 }: UseCertificateVaultProps) => {
   const { user } = useAuth();
   const {
@@ -61,6 +64,10 @@ export const useCertificateVault = ({
     setShowForm,
     setEditingEntry,
     onMasterPasswordSet,
+    unifiedLockTimeoutMinutes,
+    onUnifiedTimeoutChange,
+    onUnifiedMasterPasswordClear,
+    useUnifiedPassword,
   });
 
   const {
@@ -110,13 +117,19 @@ export const useCertificateVault = ({
   useEffect(() => {
     const checkMasterPassword = async () => {
       if (!user) return;
+      
+      // Skip checking if we're using unified password and already have it
+      if (useUnifiedPassword && propMasterPassword) {
+        return;
+      }
+      
       const { data, error } = await supabase.from('user_master_passwords').select('*').eq('user_id', user.id).maybeSingle();
       if (error) { console.error('Error checking master password:', error); return; }
       setShowMasterModal(true);
       if (!data) setIsCreatingMaster(true);
     };
     if (user && !masterPassword) checkMasterPassword();
-  }, [user, masterPassword, setShowMasterModal, setIsCreatingMaster]);
+  }, [user, masterPassword, setShowMasterModal, setIsCreatingMaster, useUnifiedPassword, propMasterPassword]);
 
   useEffect(() => {
     if (masterPassword) {

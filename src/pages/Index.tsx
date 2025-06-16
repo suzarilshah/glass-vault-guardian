@@ -98,6 +98,17 @@ const Index = () => {
     setUnifiedLockTimeoutMinutes(minutes);
   };
 
+  const handleUnifiedMasterPasswordClear = () => {
+    if (useUnifiedPassword) {
+      setMasterPasswords({
+        unified: null,
+        password: null,
+        api: null,
+        certificate: null,
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
@@ -143,6 +154,7 @@ const Index = () => {
               useUnifiedPassword={useUnifiedPassword}
               unifiedLockTimeoutMinutes={useUnifiedPassword ? unifiedLockTimeoutMinutes : undefined}
               onUnifiedTimeoutChange={useUnifiedPassword ? handleUnifiedTimeoutChange : undefined}
+              onUnifiedMasterPasswordClear={useUnifiedPassword ? handleUnifiedMasterPasswordClear : undefined}
             />
           )}
 
@@ -153,6 +165,7 @@ const Index = () => {
               useUnifiedPassword={useUnifiedPassword}
               unifiedLockTimeoutMinutes={useUnifiedPassword ? unifiedLockTimeoutMinutes : undefined}
               onUnifiedTimeoutChange={useUnifiedPassword ? handleUnifiedTimeoutChange : undefined}
+              onUnifiedMasterPasswordClear={useUnifiedPassword ? handleUnifiedMasterPasswordClear : undefined}
             />
           )}
 
@@ -163,6 +176,7 @@ const Index = () => {
               useUnifiedPassword={useUnifiedPassword}
               unifiedLockTimeoutMinutes={useUnifiedPassword ? unifiedLockTimeoutMinutes : undefined}
               onUnifiedTimeoutChange={useUnifiedPassword ? handleUnifiedTimeoutChange : undefined}
+              onUnifiedMasterPasswordClear={useUnifiedPassword ? handleUnifiedMasterPasswordClear : undefined}
             />
           )}
         </div>

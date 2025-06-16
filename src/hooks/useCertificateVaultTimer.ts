@@ -8,6 +8,10 @@ interface UseCertificateVaultTimerProps {
   setShowForm: (show: boolean) => void;
   setEditingEntry: (entry: any) => void;
   onMasterPasswordSet?: (password: string | null) => void;
+  unifiedLockTimeoutMinutes?: number;
+  onUnifiedTimeoutChange?: (minutes: number) => void;
+  onUnifiedMasterPasswordClear?: () => void;
+  useUnifiedPassword?: boolean;
 }
 
 export const useCertificateVaultTimer = ({
@@ -16,6 +20,10 @@ export const useCertificateVaultTimer = ({
   setShowForm,
   setEditingEntry,
   onMasterPasswordSet,
+  unifiedLockTimeoutMinutes,
+  onUnifiedTimeoutChange,
+  onUnifiedMasterPasswordClear,
+  useUnifiedPassword = false,
 }: UseCertificateVaultTimerProps) => {
   const [lockTimeoutMinutes, setLockTimeoutMinutes] = useState<number>(5);
   const [lockTimer, setLockTimer] = useState<NodeJS.Timeout | null>(null);
@@ -23,11 +31,16 @@ export const useCertificateVaultTimer = ({
   const [countdownInterval, setCountdownInterval] = useState<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
+  // Use unified timeout if available, otherwise use local timeout
+  const effectiveTimeoutMinutes = useUnifiedPassword && unifiedLockTimeoutMinutes 
+    ? unifiedLockTimeoutMinutes 
+    : lockTimeoutMinutes;
+
   const startLockTimer = useCallback(() => {
     if (lockTimer) clearTimeout(lockTimer);
     if (countdownInterval) clearInterval(countdownInterval);
 
-    const timeoutMs = lockTimeoutMinutes * 60 * 1000;
+    const timeoutMs = effectiveTimeoutMinutes * 60 * 1000;
     const deadline = Date.now() + timeoutMs;
     setRemainingTime(timeoutMs / 1000);
 
@@ -40,10 +53,14 @@ export const useCertificateVaultTimer = ({
 
     const newTimer = setTimeout(() => {
       clearInterval(newCountdownInterval);
-      setMasterPassword(null);
+      if (useUnifiedPassword && onUnifiedMasterPasswordClear) {
+        onUnifiedMasterPasswordClear();
+      } else {
+        setMasterPassword(null);
+        onMasterPasswordSet?.(null);
+      }
       setShowForm(false);
       setEditingEntry(null);
-      onMasterPasswordSet?.(null);
       toast({ 
         title: "Vault Locked", 
         description: "Your certificate vault has been automatically locked for security", 
@@ -51,32 +68,41 @@ export const useCertificateVaultTimer = ({
       });
     }, timeoutMs);
     setLockTimer(newTimer);
-  }, [lockTimeoutMinutes, onMasterPasswordSet, toast, setMasterPassword, setShowForm, setEditingEntry]);
+  }, [effectiveTimeoutMinutes, onMasterPasswordSet, toast, setMasterPassword, setShowForm, setEditingEntry, useUnifiedPassword, onUnifiedMasterPasswordClear]);
 
   const manualLockVault = useCallback(() => {
     if (lockTimer) clearTimeout(lockTimer);
     if (countdownInterval) clearInterval(countdownInterval);
-    setMasterPassword(null);
+    
+    if (useUnifiedPassword && onUnifiedMasterPasswordClear) {
+      onUnifiedMasterPasswordClear();
+    } else {
+      setMasterPassword(null);
+      onMasterPasswordSet?.(null);
+    }
     setShowForm(false);
     setEditingEntry(null);
-    onMasterPasswordSet?.(null);
     toast({ 
       title: "Vault Locked", 
       description: "Your certificate vault has been manually locked.", 
       variant: "destructive" 
     });
-  }, [lockTimer, countdownInterval, onMasterPasswordSet, toast, setMasterPassword, setShowForm, setEditingEntry]);
+  }, [lockTimer, countdownInterval, onMasterPasswordSet, toast, setMasterPassword, setShowForm, setEditingEntry, useUnifiedPassword, onUnifiedMasterPasswordClear]);
 
   const handleTimeoutChange = useCallback((minutes: number) => {
-    setLockTimeoutMinutes(minutes);
+    if (useUnifiedPassword && onUnifiedTimeoutChange) {
+      onUnifiedTimeoutChange(minutes);
+    } else {
+      setLockTimeoutMinutes(minutes);
+    }
     if (masterPassword) startLockTimer();
-  }, [masterPassword, startLockTimer]);
+  }, [masterPassword, startLockTimer, useUnifiedPassword, onUnifiedTimeoutChange]);
 
   useEffect(() => {
     if (masterPassword) {
       startLockTimer();
     }
-  }, [masterPassword, startLockTimer]);
+  }, [masterPassword, startLockTimer, effectiveTimeoutMinutes]);
 
   useEffect(() => {
     return () => {
@@ -86,7 +112,7 @@ export const useCertificateVaultTimer = ({
   }, [lockTimer, countdownInterval]);
 
   return {
-    lockTimeoutMinutes,
+    lockTimeoutMinutes: effectiveTimeoutMinutes,
     remainingTime,
     startLockTimer,
     manualLockVault,
