@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +12,7 @@ interface UsePasswordVaultProps {
   useUnifiedPassword?: boolean;
   unifiedLockTimeoutMinutes?: number;
   onUnifiedTimeoutChange?: (minutes: number) => void;
+  onUnifiedMasterPasswordClear?: () => void;
 }
 
 export const usePasswordVault = ({ 
@@ -20,7 +20,8 @@ export const usePasswordVault = ({
   onMasterPasswordSet,
   useUnifiedPassword = false,
   unifiedLockTimeoutMinutes,
-  onUnifiedTimeoutChange
+  onUnifiedTimeoutChange,
+  onUnifiedMasterPasswordClear
 }: UsePasswordVaultProps) => {
   const { user } = useAuth();
   const {
@@ -65,6 +66,10 @@ export const usePasswordVault = ({
     setEditingEntry,
     onMasterPasswordSet,
     setVisiblePasswords,
+    unifiedLockTimeoutMinutes,
+    onUnifiedTimeoutChange,
+    onUnifiedMasterPasswordClear,
+    useUnifiedPassword,
   });
 
   const {
