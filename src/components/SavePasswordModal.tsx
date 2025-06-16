@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,22 +67,7 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
       }
 
       if (data) {
-        console.log('Raw groups data:', data);
-        // Ultra-comprehensive filtering to ensure absolutely no empty or invalid IDs
-        const validGroups = data.filter(group => {
-          const hasValidId = group.id && 
-                            typeof group.id === 'string' && 
-                            group.id.trim().length > 0 && 
-                            group.id !== 'null' && 
-                            group.id !== 'undefined' &&
-                            group.id !== 'NaN' &&
-                            !group.id.includes('\0') &&
-                            group.id.trim() !== '';
-          console.log(`Group ${group.name} - ID: "${group.id}" - Valid: ${hasValidId}`);
-          return hasValidId && group.name && group.name.trim() !== '';
-        });
-        console.log('Valid groups after filtering:', validGroups);
-        setGroups(validGroups);
+        setGroups(data);
       }
     } catch (error) {
       console.error('Error in fetchGroups:', error);
@@ -123,11 +109,7 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
         description: "Group created successfully"
       });
 
-      // Only set the group_id if the returned data has a valid ID
-      if (data && data.id && data.id.trim() !== '') {
-        setFormData(prev => ({ ...prev, group_id: data.id }));
-      }
-      
+      setFormData(prev => ({ ...prev, group_id: data.id }));
       setNewGroupData({ name: '', description: '' });
       setShowCreateGroup(false);
       
@@ -181,7 +163,7 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
         password_encrypted: password, // Password should already be encrypted
         website: formData.website.trim(),
         notes: formData.notes.trim(),
-        group_id: formData.group_id === 'NO_GROUP' ? null : formData.group_id || null,
+        group_id: formData.group_id || null,
         expires_at: expiresAt,
         is_expired: false
       };
@@ -227,29 +209,6 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
     setIsLoading(false);
     setIsCreatingGroup(false);
     onClose();
-  };
-
-  // Ensure we always have a valid, non-empty value for the Select
-  const getSelectValue = () => {
-    const groupId = formData.group_id;
-    // Return 'NO_GROUP' if group_id is empty, null, undefined, or just whitespace
-    if (!groupId || typeof groupId !== 'string' || groupId.trim() === '') {
-      return 'NO_GROUP';
-    }
-    // Return 'NO_GROUP' if the group_id doesn't exist in our valid groups list
-    const groupExists = groups.some(group => group.id === groupId);
-    return groupExists ? groupId : 'NO_GROUP';
-  };
-
-  // Helper function to ensure group ID is NEVER empty for SelectItem - force a fallback
-  const getSafeGroupId = (group: PasswordGroup) => {
-    const id = group.id;
-    // Triple check that we never return an empty string
-    if (!id || typeof id !== 'string' || id.trim() === '' || id === 'null' || id === 'undefined') {
-      console.error(`Critical: Empty group ID detected for group: ${group.name}`, group);
-      return `FALLBACK_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    }
-    return id.trim();
   };
 
   return (
@@ -346,33 +305,21 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
             )}
 
             <Select 
-              value={getSelectValue()} 
-              onValueChange={(value) => setFormData(prev => ({ 
-                ...prev, 
-                group_id: value === 'NO_GROUP' ? '' : value 
-              }))}
+              value={formData.group_id || '--NONE--'} 
+              onValueChange={(value) => setFormData(prev => ({ ...prev, group_id: value === '--NONE--' ? '' : value }))}
             >
               <SelectTrigger className="glass-input bg-white/5 border-white/20 text-white">
                 <SelectValue placeholder="Select group (optional)" />
               </SelectTrigger>
               <SelectContent className="glass-card bg-gray-800 backdrop-blur-xl border-white/20 z-50">
-                <SelectItem value="NO_GROUP" className="text-white hover:bg-white/10">
+                <SelectItem value="--NONE--" className="text-white hover:bg-white/10">
                   (No Group)
                 </SelectItem>
-                {groups.map((group) => {
-                  const safeId = getSafeGroupId(group);
-                  console.log(`Rendering SelectItem for group: ${group.name} with safe ID: "${safeId}"`);
-                  // Double check that safeId is never empty before rendering
-                  if (!safeId || safeId.trim() === '') {
-                    console.error('Skipping group with empty safe ID:', group);
-                    return null;
-                  }
-                  return (
-                    <SelectItem key={safeId} value={safeId} className="text-white hover:bg-white/10">
-                      {group.name}
-                    </SelectItem>
-                  );
-                })}
+                {groups.map((group) => (
+                  <SelectItem key={group.id} value={group.id} className="text-white hover:bg-white/10">
+                    {group.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

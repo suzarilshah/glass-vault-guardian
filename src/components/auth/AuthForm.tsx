@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -5,7 +6,6 @@ import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import PasswordStrengthBar from '../vault/PasswordStrengthBar';
-import { supabase } from '@/integrations/supabase/client';
 
 interface AuthFormProps {
   isSignUp: boolean;
@@ -91,23 +91,6 @@ const AuthForm: React.FC<AuthFormProps> = ({
   const signUpPasswordValidation = validatePassword(password, firstName, lastName);
   const canSignUp = email && password && firstName && lastName && signUpPasswordValidation.isValid && !loading;
 
-  const checkMfaStatus = async (userId: string) => {
-    try {
-      const { data, error } = await supabase.auth.mfa.listFactors();
-      if (error) {
-        console.error('Error checking MFA status:', error);
-        return false;
-      }
-      
-      // Check if user has any verified TOTP factors
-      const hasVerifiedTotp = data.totp.some(factor => factor.status === 'verified');
-      return hasVerifiedTotp;
-    } catch (error) {
-      console.error('Error checking MFA status:', error);
-      return false;
-    }
-  };
-
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
@@ -121,12 +104,10 @@ const AuthForm: React.FC<AuthFormProps> = ({
 
       if (error) {
         toast({ title: "Authentication Error", description: error.message, variant: "destructive" });
-      } else if (data.session && data.user) {
-        // Check if user has MFA enabled
-        const hasMfaEnabled = await checkMfaStatus(data.user.id);
-        
-        // Check if MFA challenge is needed - if user has MFA enabled, prompt for 2FA
-        if (hasMfaEnabled) {
+      } else {
+        // @ts-ignore - The 'aal' property is used for MFA checks, but TS isn't finding it in the User type.
+        const aal = data.session?.user?.aal;
+        if (aal === 'aal1') {
           setIsMfaChallenge(true);
         } else {
           toast({ title: "Welcome back!", description: "Successfully signed in." });
@@ -184,7 +165,6 @@ const AuthForm: React.FC<AuthFormProps> = ({
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
             <label className="text-sm text-gray-300">First Name</label>
-            <p className="text-xs text-gray-400 mb-1">Enter your legal first name</p>
             <div className="relative">
               <User className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
               <Input
@@ -199,7 +179,6 @@ const AuthForm: React.FC<AuthFormProps> = ({
           </div>
           <div className="space-y-2">
             <label className="text-sm text-gray-300">Last Name</label>
-            <p className="text-xs text-gray-400 mb-1">Enter your legal last name</p>
             <div className="relative">
               <User className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
               <Input
@@ -217,7 +196,6 @@ const AuthForm: React.FC<AuthFormProps> = ({
 
       <div className="space-y-2">
         <label className="text-sm text-gray-300">Email Address</label>
-        <p className="text-xs text-gray-400 mb-1">Use a valid email address for account verification</p>
         <div className="relative">
           <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
           <Input
@@ -232,14 +210,7 @@ const AuthForm: React.FC<AuthFormProps> = ({
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm text-gray-300">
-          {isSignUp ? 'Account Password' : 'Password'}
-        </label>
-        {isSignUp && (
-          <p className="text-xs text-gray-400 mb-1">
-            Create a strong password that will be different from your vault master password
-          </p>
-        )}
+        <label className="text-sm text-gray-300">Password</label>
         <div className="relative">
           <Lock className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
           <Input

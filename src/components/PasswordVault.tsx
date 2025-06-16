@@ -176,7 +176,6 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({
                 setEditingEntry(null);
                 setFormData({ title: '', username: '', password: '', website: '', notes: '', group_id: '', expiration_days: '' });
               }}
-              showForm={showForm}
             />
           )}
 

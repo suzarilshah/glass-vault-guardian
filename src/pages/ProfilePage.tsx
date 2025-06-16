@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, User, Mail, Save, AlertTriangle, Lock, Key, Shield, Settings, Phone } from 'lucide-react';
+import { ArrowLeft, User, Mail, Save, AlertTriangle, Lock, Key, Shield, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -25,7 +25,6 @@ const ProfilePage = () => {
     first_name: '',
     last_name: '',
     email: '',
-    phone_number: '',
   });
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -38,14 +37,14 @@ const ProfilePage = () => {
   const [tfaSetupInfo, setTfaSetupInfo] = useState<{qrCode: string, secret: string, factorId: string} | null>(null);
   const [tfaVerificationCode, setTfaVerificationCode] = useState('');
   const [isTfaEnabled, setIsTfaEnabled] = useState(false);
-  const [isTfaLoading, setIsLoadingTfa] = useState(true);
+  const [isTfaLoading, setIsTfaLoading] = useState(true);
   const [deletingAccount, setDeletingAccount] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchProfile();
       const checkTfa = async () => {
-        setIsLoadingTfa(true);
+        setIsTfaLoading(true);
         const { data, error } = await supabase.auth.mfa.listFactors();
         if (error) {
             console.error('Error listing MFA factors:', error);
@@ -54,7 +53,7 @@ const ProfilePage = () => {
             const isEnabled = data.totp.some(factor => factor.status === 'verified');
             setIsTfaEnabled(isEnabled);
         }
-        setIsLoadingTfa(false);
+        setIsTfaLoading(false);
       }
       checkTfa();
     }
@@ -66,7 +65,7 @@ const ProfilePage = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('first_name, last_name, email, phone_number')
+        .select('first_name, last_name, email')
         .eq('id', user.id)
         .single();
 
@@ -80,25 +79,17 @@ const ProfilePage = () => {
           first_name: data.first_name || '',
           last_name: data.last_name || '',
           email: data.email || user.email || '',
-          phone_number: data.phone_number || '',
         });
       } else {
         setProfile({
           first_name: '',
           last_name: '',
           email: user.email || '',
-          phone_number: '',
         });
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
-  };
-
-  const validatePhoneNumber = (phone: string) => {
-    // Basic phone number validation - supports international formats
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
   };
 
   const validatePassword = (password: string, firstName: string = '', lastName: string = '') => {
@@ -151,16 +142,6 @@ const ProfilePage = () => {
   const handleSave = async () => {
     if (!user) return;
 
-    // Validate phone number if provided
-    if (profile.phone_number && !validatePhoneNumber(profile.phone_number)) {
-      toast({
-        title: "Invalid Phone Number",
-        description: "Please enter a valid phone number",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setIsLoading(true);
     try {
       const { error } = await supabase
@@ -170,7 +151,6 @@ const ProfilePage = () => {
           first_name: profile.first_name,
           last_name: profile.last_name,
           email: profile.email,
-          phone_number: profile.phone_number,
           updated_at: new Date().toISOString(),
         });
 
@@ -339,6 +319,7 @@ const ProfilePage = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          // Auth header is automatically included by supabase client
         },
       });
 
@@ -362,6 +343,7 @@ const ProfilePage = () => {
         description: "Your account has been completely deleted.",
       });
 
+      // Sign out user after deletion
       await signOut();
       navigate("/");
     } catch (e: any) {
@@ -460,24 +442,6 @@ const ProfilePage = () => {
                   </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="phoneNumber" className="text-gray-300">Phone Number</Label>
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-gray-400" />
-                    <Input
-                      id="phoneNumber"
-                      type="tel"
-                      value={profile.phone_number}
-                      onChange={(e) => setProfile(prev => ({ ...prev, phone_number: e.target.value }))}
-                      className="glass-input bg-white/5 border-white/20 text-white"
-                      placeholder="Enter your phone number (optional)"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Phone number may be used for account recovery or future 2FA implementation
-                  </p>
-                </div>
-
                 <Button
                   onClick={handleSave}
                   disabled={isLoading}
@@ -509,12 +473,6 @@ const ProfilePage = () => {
                 >
                   {showPasswordSection ? 'Cancel' : 'Change Password'}
                 </Button>
-              </div>
-
-              <div className="mb-4 p-3 bg-amber-900/20 border border-amber-500/30 rounded-lg">
-                <p className="text-amber-200 text-sm">
-                  <strong>Security Recommendation:</strong> Your account password must be different from your master password for enhanced security. This helps protect your vault even if your account credentials are compromised.
-                </p>
               </div>
 
               {showPasswordSection && (
@@ -558,119 +516,63 @@ const ProfilePage = () => {
 
           <TabsContent value="two-factor">
             <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
-              <div className="flex items-center gap-2 mb-6">
+              <div className="flex items-center gap-2 mb-4">
                 <ShieldCheck className="w-5 h-5 text-white" />
                 <h2 className="text-xl font-semibold text-white">Two-Factor Authentication (2FA)</h2>
               </div>
               
-              <div className="mb-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-                <p className="text-blue-200 text-sm">
-                  <strong>Enhanced Security:</strong> Two-Factor Authentication adds an extra layer of security to your account. When enabled, you'll need to enter a verification code from your authenticator app in addition to your password when signing in.
-                </p>
-              </div>
-              
               {isTfaLoading ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-32 rounded bg-white/10" />
-                  <Skeleton className="h-10 w-40 rounded bg-white/10" />
-                </div>
+                <Skeleton className="h-10 w-40 rounded-md bg-white/10" />
               ) : isTfaEnabled ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 p-3 bg-green-900/20 border border-green-500/30 rounded-lg">
-                    <ShieldCheck className="w-5 h-5 text-green-400" />
-                    <span className="text-green-200 font-medium">2FA is currently enabled and protecting your account</span>
-                  </div>
+                <div>
+                  <p className="text-green-400 mb-4">2FA is currently enabled.</p>
                   <Button
                     onClick={handleDisableTfa}
-                    variant="destructive"
                     className="bg-red-600 hover:bg-red-700 text-white"
                   >
                     Disable 2FA
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-6">
+                <div>
                   {tfaSetupInfo ? (
-                    <div className="space-y-6">
-                      <div className="text-center">
-                        <h3 className="text-lg font-semibold text-white mb-2">Set Up Your Authenticator App</h3>
-                        <p className="text-gray-300 mb-4">Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)</p>
+                    <div className="space-y-4">
+                      <p className="text-gray-300">Scan this QR code with your authenticator app (e.g., Google Authenticator, Authy).</p>
+                      <div className="bg-white p-2 rounded-lg inline-block">
+                        <img src={tfaSetupInfo.qrCode} alt="2FA QR Code" />
                       </div>
-                      
-                      <div className="flex justify-center">
-                        <div className="bg-white p-4 rounded-lg">
-                          <img src={tfaSetupInfo.qrCode} alt="2FA QR Code" className="w-48 h-48" />
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <p className="text-gray-300 text-sm text-center">Or manually enter this setup key:</p>
-                        <div className="bg-gray-800 p-3 rounded-lg">
-                          <code className="text-green-400 text-sm break-all block text-center">{tfaSetupInfo.secret}</code>
-                        </div>
+                      <p className="text-gray-300 text-sm">Or manually enter this setup key:</p>
+                      <code className="bg-gray-800 text-green-400 p-2 rounded-md block break-all">{tfaSetupInfo.secret}</code>
+
+                      <div>
+                        <Label htmlFor="tfa-code" className="text-gray-300">Verification Code</Label>
+                        <InputOTP id="tfa-code" maxLength={6} value={tfaVerificationCode} onChange={setTfaVerificationCode}>
+                          <InputOTPGroup>
+                            <InputOTPSlot index={0} />
+                            <InputOTPSlot index={1} />
+                            <InputOTPSlot index={2} />
+                          </InputOTPGroup>
+                          <InputOTPSeparator />
+                          <InputOTPGroup>
+                            <InputOTPSlot index={3} />
+                            <InputOTPSlot index={4} />
+                            <InputOTPSlot index={5} />
+                          </InputOTPGroup>
+                        </InputOTP>
                       </div>
 
-                      <div className="space-y-3">
-                        <Label htmlFor="tfa-code" className="text-gray-300 block text-center">Enter the 6-digit verification code from your app:</Label>
-                        <div className="flex justify-center">
-                          <InputOTP 
-                            id="tfa-code" 
-                            maxLength={6} 
-                            value={tfaVerificationCode} 
-                            onChange={setTfaVerificationCode}
-                            className="gap-2"
-                          >
-                            <InputOTPGroup className="gap-2">
-                              <InputOTPSlot index={0} className="w-12 h-12 border-2 border-white/20 bg-white text-black text-lg font-semibold" />
-                              <InputOTPSlot index={1} className="w-12 h-12 border-2 border-white/20 bg-white text-black text-lg font-semibold" />
-                              <InputOTPSlot index={2} className="w-12 h-12 border-2 border-white/20 bg-white text-black text-lg font-semibold" />
-                            </InputOTPGroup>
-                            <InputOTPSeparator className="text-white" />
-                            <InputOTPGroup className="gap-2">
-                              <InputOTPSlot index={3} className="w-12 h-12 border-2 border-white/20 bg-white text-black text-lg font-semibold" />
-                              <InputOTPSlot index={4} className="w-12 h-12 border-2 border-white/20 bg-white text-black text-lg font-semibold" />
-                              <InputOTPSlot index={5} className="w-12 h-12 border-2 border-white/20 bg-white text-black text-lg font-semibold" />
-                            </InputOTPGroup>
-                          </InputOTP>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-3 justify-center">
-                        <Button 
-                          onClick={handleVerifyTfa} 
-                          disabled={tfaVerificationCode.length !== 6}
-                          className="bg-green-600 hover:bg-green-700 text-white px-6"
-                        >
-                          Verify and Enable 2FA
-                        </Button>
-                        <Button 
-                          onClick={handleCancelTfaSetup} 
-                          variant="outline" 
-                          className="bg-transparent border-gray-400 text-gray-300 hover:bg-gray-700 px-6"
-                        >
-                          Cancel Setup
-                        </Button>
+                      <div className="flex gap-2">
+                        <Button onClick={handleVerifyTfa} className="bg-green-600 hover:bg-green-700 text-white">Verify and Enable</Button>
+                        <Button onClick={handleCancelTfaSetup} variant="outline" className="bg-transparent border-gray-400 text-gray-300 hover:bg-gray-700">Cancel</Button>
                       </div>
                     </div>
                   ) : (
-                    <div className="text-center space-y-4">
-                      <div className="space-y-2">
-                        <h3 className="text-lg font-semibold text-white">Enable Two-Factor Authentication</h3>
-                        <p className="text-gray-300">Protect your account with an additional security layer</p>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-gray-400 text-sm">You'll need an authenticator app like:</p>
-                        <div className="flex justify-center gap-4 text-sm text-gray-300">
-                          <span>• Google Authenticator</span>
-                          <span>• Authy</span>
-                          <span>• Microsoft Authenticator</span>
-                        </div>
-                      </div>
+                    <div>
+                      <p className="text-gray-300 mb-4">Add an extra layer of security to your account.</p>
                       <Button
                         onClick={handleEnableTfa}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
                       >
-                        <ShieldCheck className="w-4 h-4 mr-2" />
                         Enable 2FA
                       </Button>
                     </div>
@@ -688,22 +590,10 @@ const ProfilePage = () => {
               </div>
 
               <div className="space-y-4">
-                <div className="p-4 bg-red-900/20 border border-red-500/40 rounded-lg">
-                  <h3 className="text-red-300 font-semibold mb-2">⚠️ CRITICAL WARNING</h3>
-                  <p className="text-red-200 text-sm leading-relaxed">
-                    <strong>Account deactivation is PERMANENT and IRREVERSIBLE.</strong> This action will immediately and permanently delete:
-                  </p>
-                  <ul className="text-red-200 text-sm mt-2 ml-4 space-y-1">
-                    <li>• All stored passwords and their history</li>
-                    <li>• All API credentials and keys</li>
-                    <li>• All certificates and private keys</li>
-                    <li>• Your user profile and preferences</li>
-                    <li>• ALL vault data associated with your account</li>
-                  </ul>
-                  <p className="text-red-200 text-sm mt-3">
-                    <strong>There is NO way to recover this data once deleted.</strong> Please ensure you have backed up any critical information before proceeding.
-                  </p>
-                </div>
+                <p className="text-gray-300 text-sm">
+                  Once you deactivate your account, all your data will be marked as inactive and you will be signed out. 
+                  This action is reversible by contacting support.
+                </p>
 
                 <Button
                   onClick={() => setShowDeactivateConfirm(true)}
@@ -711,7 +601,7 @@ const ProfilePage = () => {
                   disabled={deletingAccount}
                 >
                   <AlertTriangle className="w-4 h-4 mr-2" />
-                  {deletingAccount ? "Permanently Deleting Account..." : "Permanently Delete Account"}
+                  {deletingAccount ? "Deleting Account..." : "Deactivate Account"}
                 </Button>
               </div>
             </Card>
@@ -723,9 +613,9 @@ const ProfilePage = () => {
         isOpen={showDeactivateConfirm}
         onClose={() => setShowDeactivateConfirm(false)}
         onConfirm={handleDeactivateAccount}
-        title="Permanently Delete Account"
-        message="Are you absolutely certain you want to permanently delete your account? This action cannot be undone and will permanently destroy all your vault data, passwords, API credentials, and certificates. Type 'DELETE' to confirm this irreversible action."
-        confirmText="Permanently Delete Account"
+        title="Deactivate Account"
+        message="Are you sure you want to deactivate your account? You will be signed out and your data will be marked as inactive. Contact support to reactivate your account."
+        confirmText="Deactivate Account"
         isDangerous={true}
       />
     </div>
