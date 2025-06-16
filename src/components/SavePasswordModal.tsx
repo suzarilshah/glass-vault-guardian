@@ -67,7 +67,9 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
       }
 
       if (data) {
-        setGroups(data);
+        // Filter out any groups with empty string IDs to prevent the Select error
+        const validGroups = data.filter(group => group.id && group.id.trim() !== '');
+        setGroups(validGroups);
       }
     } catch (error) {
       console.error('Error in fetchGroups:', error);
@@ -109,7 +111,11 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
         description: "Group created successfully"
       });
 
-      setFormData(prev => ({ ...prev, group_id: data.id }));
+      // Only set the group_id if the returned data has a valid ID
+      if (data && data.id && data.id.trim() !== '') {
+        setFormData(prev => ({ ...prev, group_id: data.id }));
+      }
+      
       setNewGroupData({ name: '', description: '' });
       setShowCreateGroup(false);
       
