@@ -211,6 +211,9 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
     onClose();
   };
 
+  // Get the current select value, ensuring it's never an empty string
+  const selectValue = formData.group_id === '' ? 'NO_GROUP' : formData.group_id;
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="glass-card bg-white/5 backdrop-blur-xl border-white/20 text-white max-w-md">
@@ -305,7 +308,7 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
             )}
 
             <Select 
-              value={formData.group_id || 'NO_GROUP'} 
+              value={selectValue} 
               onValueChange={(value) => setFormData(prev => ({ ...prev, group_id: value === 'NO_GROUP' ? '' : value }))}
             >
               <SelectTrigger className="glass-input bg-white/5 border-white/20 text-white">
