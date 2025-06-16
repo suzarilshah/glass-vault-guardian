@@ -226,8 +226,17 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
     onClose();
   };
 
-  // Always ensure we have a valid value - use 'NO_GROUP' if group_id is empty or invalid
-  const selectValue = formData.group_id && formData.group_id.trim() !== '' ? formData.group_id : 'NO_GROUP';
+  // Ensure we always have a valid, non-empty value for the Select
+  const getSelectValue = () => {
+    const groupId = formData.group_id;
+    // Return 'NO_GROUP' if group_id is empty, null, undefined, or just whitespace
+    if (!groupId || typeof groupId !== 'string' || groupId.trim() === '') {
+      return 'NO_GROUP';
+    }
+    // Return 'NO_GROUP' if the group_id doesn't exist in our valid groups list
+    const groupExists = groups.some(group => group.id === groupId);
+    return groupExists ? groupId : 'NO_GROUP';
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -323,7 +332,7 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
             )}
 
             <Select 
-              value={selectValue} 
+              value={getSelectValue()} 
               onValueChange={(value) => setFormData(prev => ({ 
                 ...prev, 
                 group_id: value === 'NO_GROUP' ? '' : value 
