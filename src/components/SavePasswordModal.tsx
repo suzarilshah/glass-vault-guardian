@@ -67,15 +67,18 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
 
       if (data) {
         console.log('Raw groups data:', data);
-        // More comprehensive filtering to ensure no empty or invalid IDs
+        // Ultra-comprehensive filtering to ensure absolutely no empty or invalid IDs
         const validGroups = data.filter(group => {
           const hasValidId = group.id && 
                             typeof group.id === 'string' && 
-                            group.id.trim() !== '' && 
+                            group.id.trim().length > 0 && 
                             group.id !== 'null' && 
-                            group.id !== 'undefined';
+                            group.id !== 'undefined' &&
+                            group.id !== 'NaN' &&
+                            !group.id.includes('\0') &&
+                            group.id.trim() !== '';
           console.log(`Group ${group.name} - ID: "${group.id}" - Valid: ${hasValidId}`);
-          return hasValidId;
+          return hasValidId && group.name && group.name.trim() !== '';
         });
         console.log('Valid groups after filtering:', validGroups);
         setGroups(validGroups);
@@ -238,6 +241,15 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
     return groupExists ? groupId : 'NO_GROUP';
   };
 
+  // Helper function to ensure group ID is never empty for SelectItem
+  const getSafeGroupId = (group: PasswordGroup) => {
+    if (!group.id || typeof group.id !== 'string' || group.id.trim() === '') {
+      console.warn(`Invalid group ID detected for group: ${group.name}`, group);
+      return `fallback-${Date.now()}-${Math.random()}`;
+    }
+    return group.id;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="glass-card bg-white/5 backdrop-blur-xl border-white/20 text-white max-w-md">
@@ -345,12 +357,11 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
                 <SelectItem value="NO_GROUP" className="text-white hover:bg-white/10">
                   (No Group)
                 </SelectItem>
-                {groups
-                  .filter(group => group.id && group.id.trim() !== '' && group.id !== 'null' && group.id !== 'undefined')
-                  .map((group) => {
-                    console.log(`Rendering SelectItem for group: ${group.name} with ID: "${group.id}"`);
+                {groups.map((group) => {
+                    const safeId = getSafeGroupId(group);
+                    console.log(`Rendering SelectItem for group: ${group.name} with safe ID: "${safeId}"`);
                     return (
-                      <SelectItem key={group.id} value={group.id} className="text-white hover:bg-white/10">
+                      <SelectItem key={safeId} value={safeId} className="text-white hover:bg-white/10">
                         {group.name}
                       </SelectItem>
                     );
