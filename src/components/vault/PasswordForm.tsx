@@ -1,23 +1,25 @@
 
-import React, { useState } from 'react';
-import { Card } from '@/components/ui/card';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Save, RefreshCw, BarChart3 } from 'lucide-react';
-import { PasswordGroup, PasswordEntry, FormData } from '@/types/vault';
+import { Card } from '@/components/ui/card';
+import { Eye, EyeOff, Shuffle } from 'lucide-react';
+import { FormData, PasswordEntry } from '@/types/vault';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
-import AdvancedPasswordStrengthIndicator from './AdvancedPasswordStrengthIndicator';
+import { useState } from 'react';
 
 interface PasswordFormProps {
   formData: FormData;
-  groups: PasswordGroup[];
+  groups: any[];
   editingEntry: PasswordEntry | null;
   onFormDataChange: (data: Partial<FormData>) => void;
-  onGeneratePassword: () => void;
   onSave: () => void;
   onCancel: () => void;
+  onGeneratePassword: () => void;
+  showForm: boolean;
 }
 
 const PasswordForm: React.FC<PasswordFormProps> = ({
@@ -25,129 +27,171 @@ const PasswordForm: React.FC<PasswordFormProps> = ({
   groups,
   editingEntry,
   onFormDataChange,
-  onGeneratePassword,
   onSave,
-  onCancel
+  onCancel,
+  onGeneratePassword,
+  showForm,
 }) => {
-  const [showAdvancedScoring, setShowAdvancedScoring] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  if (!showForm) return null;
 
   return (
     <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
-      <h3 className="text-lg font-semibold text-white mb-4">
-        {editingEntry ? 'Edit Password' : 'Add New Password'}
+      <h3 className="text-xl font-semibold text-white mb-6">
+        {editingEntry ? 'Edit Password Entry' : 'Add New Password'}
       </h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input
-          placeholder="Title"
-          value={formData.title}
-          onChange={(e) => onFormDataChange({ title: e.target.value })}
-          className="glass-input bg-white/5 border-white/20 text-white"
-        />
-        <Input
-          placeholder="Username/Email"
-          value={formData.username}
-          onChange={(e) => onFormDataChange({ username: e.target.value })}
-          className="glass-input bg-white/5 border-white/20 text-white"
-        />
-        <div className="relative flex">
+
+      <div className="space-y-6">
+        {/* Title/Site Name */}
+        <div className="space-y-2">
+          <Label htmlFor="title" className="text-gray-300 font-medium">Title / Site Name</Label>
+          <p className="text-xs text-gray-400">A descriptive name to identify this password entry (e.g., "Gmail Account", "Company Portal", "Banking App")</p>
           <Input
-            placeholder="Password"
-            type="text"
-            value={formData.password}
-            onChange={(e) => onFormDataChange({ password: e.target.value })}
-            className="glass-input bg-white/5 border-white/20 text-white pr-10"
-            autoComplete="off"
+            id="title"
+            value={formData.title}
+            onChange={(e) => onFormDataChange({ title: e.target.value })}
+            className="glass-input bg-white/5 border-white/20 text-white"
+            placeholder="Enter a descriptive title"
+            required
           />
-          <Button
-            type="button"
-            onClick={onGeneratePassword}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 h-6 w-6 text-blue-400 hover:text-blue-300 bg-blue-100 border border-blue-300"
-            variant="ghost"
-            size="sm"
-            tabIndex={-1}
-          >
-            <RefreshCw className="w-3 h-3" />
-          </Button>
         </div>
-        <Input
-          placeholder="Website"
-          value={formData.website}
-          onChange={(e) => onFormDataChange({ website: e.target.value })}
-          className="glass-input bg-white/5 border-white/20 text-white"
-        />
-        <Select
-          value={formData.group_id || '--NONE--'}
-          onValueChange={(value) => onFormDataChange({ group_id: value === '--NONE--' ? '' : value })}
-        >
-          <SelectTrigger className="glass-input bg-white/5 border-white/20 text-white">
-            <SelectValue placeholder="Select group (optional)" />
-          </SelectTrigger>
-          <SelectContent className="glass-card bg-gray-800 backdrop-blur-xl border-white/20 z-50">
-            <SelectItem value="--NONE--" className="text-white hover:bg-white/10">
-              Ungrouped
-            </SelectItem>
-            {groups.map((group) => (
-              <SelectItem key={group.id} value={group.id} className="text-white hover:bg-white/10">
-                {group.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Input
-          placeholder="Expiration (days)"
-          type="number"
-          value={formData.expiration_days}
-          onChange={(e) => onFormDataChange({ expiration_days: e.target.value })}
-          className="glass-input bg-white/5 border-white/20 text-white"
-          min="1"
-        />
-      </div>
-      
-      {/* Password strength indicators */}
-      {formData.password && (
-        <div className="mt-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowAdvancedScoring(!showAdvancedScoring)}
-              className="text-blue-400 hover:text-blue-300 p-1 h-auto"
-            >
-              <BarChart3 className="w-4 h-4 mr-1" />
-              {showAdvancedScoring ? 'Hide' : 'Show'} Detailed Analysis
-            </Button>
+
+        {/* Username/Email */}
+        <div className="space-y-2">
+          <Label htmlFor="username" className="text-gray-300 font-medium">Username / Email</Label>
+          <p className="text-xs text-gray-400">The username, email address, or login identifier for this account</p>
+          <Input
+            id="username"
+            value={formData.username}
+            onChange={(e) => onFormDataChange({ username: e.target.value })}
+            className="glass-input bg-white/5 border-white/20 text-white"
+            placeholder="Enter username or email"
+          />
+        </div>
+
+        {/* Password */}
+        <div className="space-y-2">
+          <Label htmlFor="password" className="text-gray-300 font-medium">Password</Label>
+          <p className="text-xs text-gray-400">The password for this account. Use the generator button for a strong, random password</p>
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              value={formData.password}
+              onChange={(e) => onFormDataChange({ password: e.target.value })}
+              className="glass-input bg-white/5 border-white/20 text-white pr-20"
+              placeholder="Enter password"
+              required
+            />
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-gray-400 hover:text-white p-1"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onGeneratePassword}
+                className="text-gray-400 hover:text-white p-1"
+                title="Generate strong password"
+              >
+                <Shuffle className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
-          
-          {showAdvancedScoring ? (
-            <AdvancedPasswordStrengthIndicator password={formData.password} showDetailed={true} />
-          ) : (
+          {formData.password && (
             <PasswordStrengthIndicator password={formData.password} />
           )}
         </div>
-      )}
-      
-      <Textarea
-        placeholder="Notes"
-        value={formData.notes}
-        onChange={(e) => onFormDataChange({ notes: e.target.value })}
-        className="glass-input bg-white/5 border-white/20 text-white mt-4"
-      />
-      <div className="flex gap-2 mt-4">
-        <Button
-          onClick={onCancel}
-          variant="outline"
-          className="border-white/20 text-gray-300 hover:bg-gray-700 hover:text-white"
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={onSave}
-          className="glass-button bg-green-600 hover:bg-green-700 text-white"
-        >
-          <Save className="w-4 h-4 mr-2" />
-          {editingEntry ? 'Update' : 'Save'}
-        </Button>
+
+        {/* Website URL */}
+        <div className="space-y-2">
+          <Label htmlFor="website" className="text-gray-300 font-medium">Website URL (Optional)</Label>
+          <p className="text-xs text-gray-400">The website or application URL where this password is used (helps with identification and auto-fill)</p>
+          <Input
+            id="website"
+            type="url"
+            value={formData.website}
+            onChange={(e) => onFormDataChange({ website: e.target.value })}
+            className="glass-input bg-white/5 border-white/20 text-white"
+            placeholder="https://example.com"
+          />
+        </div>
+
+        {/* Group Selection */}
+        <div className="space-y-2">
+          <Label htmlFor="group" className="text-gray-300 font-medium">Group (Optional)</Label>
+          <p className="text-xs text-gray-400">Organize passwords by grouping them into categories (e.g., "Work", "Personal", "Banking")</p>
+          <Select value={formData.group_id} onValueChange={(value) => onFormDataChange({ group_id: value })}>
+            <SelectTrigger className="glass-input bg-white/5 border-white/20 text-white">
+              <SelectValue placeholder="Select a group" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">No Group</SelectItem>
+              {groups.map((group) => (
+                <SelectItem key={group.id} value={group.id}>
+                  {group.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Expiration Days */}
+        <div className="space-y-2">
+          <Label htmlFor="expiration-days" className="text-gray-300 font-medium">Password Expiration (Optional)</Label>
+          <p className="text-xs text-gray-400">Set when this password should be changed (days from now). Leave empty for no expiration reminder</p>
+          <Input
+            id="expiration-days"
+            type="number"
+            min="1"
+            max="3650"
+            value={formData.expiration_days}
+            onChange={(e) => onFormDataChange({ expiration_days: e.target.value })}
+            className="glass-input bg-white/5 border-white/20 text-white"
+            placeholder="e.g., 90 for quarterly change"
+          />
+        </div>
+
+        {/* Notes */}
+        <div className="space-y-2">
+          <Label htmlFor="notes" className="text-gray-300 font-medium">Notes (Optional)</Label>
+          <p className="text-xs text-gray-400">Additional information about this password or account (security questions, special instructions, etc.)</p>
+          <Textarea
+            id="notes"
+            value={formData.notes}
+            onChange={(e) => onFormDataChange({ notes: e.target.value })}
+            className="glass-input bg-white/5 border-white/20 text-white min-h-20"
+            placeholder="Enter any additional notes or information"
+          />
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-3 pt-4">
+          <Button
+            type="button"
+            onClick={onSave}
+            className="bg-green-600 hover:bg-green-700 text-white"
+            disabled={!formData.title || !formData.password}
+          >
+            {editingEntry ? 'Update Password' : 'Save Password'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            className="bg-transparent border-gray-400 text-gray-300 hover:bg-gray-700"
+          >
+            Cancel
+          </Button>
+        </div>
       </div>
     </Card>
   );
