@@ -67,11 +67,28 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
       }
 
       if (data) {
-        setGroups(data);
+        // Filter out any groups with empty or invalid IDs
+        const validGroups = data.filter(group => group.id && group.id.trim() !== '');
+        setGroups(validGroups);
       }
     } catch (error) {
       console.error('Error in fetchGroups:', error);
     }
+  };
+
+  // Get the current select value, ensuring it's never an empty string
+  const getSelectValue = () => {
+    const groupId = formData.group_id;
+    if (!groupId || groupId.trim() === '') {
+      return 'NO_GROUP';
+    }
+    return groupId;
+  };
+
+  // Handle select value changes
+  const handleGroupChange = (value: string) => {
+    const newGroupId = value === 'NO_GROUP' ? '' : value;
+    setFormData(prev => ({ ...prev, group_id: newGroupId }));
   };
 
   const handleCreateGroup = async () => {
@@ -305,14 +322,14 @@ const SavePasswordModal: React.FC<SavePasswordModalProps> = ({
             )}
 
             <Select 
-              value={formData.group_id || '--NONE--'} 
-              onValueChange={(value) => setFormData(prev => ({ ...prev, group_id: value === '--NONE--' ? '' : value }))}
+              value={getSelectValue()} 
+              onValueChange={handleGroupChange}
             >
               <SelectTrigger className="glass-input bg-white/5 border-white/20 text-white">
                 <SelectValue placeholder="Select group (optional)" />
               </SelectTrigger>
               <SelectContent className="glass-card bg-gray-800 backdrop-blur-xl border-white/20 z-50">
-                <SelectItem value="--NONE--" className="text-white hover:bg-white/10">
+                <SelectItem value="NO_GROUP" className="text-white hover:bg-white/10">
                   (No Group)
                 </SelectItem>
                 {groups.map((group) => (

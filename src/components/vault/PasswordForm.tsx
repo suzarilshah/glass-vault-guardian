@@ -31,6 +31,24 @@ const PasswordForm: React.FC<PasswordFormProps> = ({
 }) => {
   const [showAdvancedScoring, setShowAdvancedScoring] = useState(false);
 
+  // Filter out any groups with empty or invalid IDs
+  const validGroups = groups.filter(group => group.id && group.id.trim() !== '');
+
+  // Get the current select value, ensuring it's never an empty string
+  const getSelectValue = () => {
+    const groupId = formData.group_id;
+    if (!groupId || groupId.trim() === '') {
+      return 'UNGROUPED';
+    }
+    return groupId;
+  };
+
+  // Handle select value changes
+  const handleGroupChange = (value: string) => {
+    const newGroupId = value === 'UNGROUPED' ? '' : value;
+    onFormDataChange({ group_id: newGroupId });
+  };
+
   return (
     <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
       <h3 className="text-lg font-semibold text-white mb-4">
@@ -76,17 +94,17 @@ const PasswordForm: React.FC<PasswordFormProps> = ({
           className="glass-input bg-white/5 border-white/20 text-white"
         />
         <Select
-          value={formData.group_id || '--NONE--'}
-          onValueChange={(value) => onFormDataChange({ group_id: value === '--NONE--' ? '' : value })}
+          value={getSelectValue()}
+          onValueChange={handleGroupChange}
         >
           <SelectTrigger className="glass-input bg-white/5 border-white/20 text-white">
             <SelectValue placeholder="Select group (optional)" />
           </SelectTrigger>
           <SelectContent className="glass-card bg-gray-800 backdrop-blur-xl border-white/20 z-50">
-            <SelectItem value="--NONE--" className="text-white hover:bg-white/10">
+            <SelectItem value="UNGROUPED" className="text-white hover:bg-white/10">
               Ungrouped
             </SelectItem>
-            {groups.map((group) => (
+            {validGroups.map((group) => (
               <SelectItem key={group.id} value={group.id} className="text-white hover:bg-white/10">
                 {group.name}
               </SelectItem>
