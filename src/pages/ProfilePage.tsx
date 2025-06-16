@@ -38,14 +38,14 @@ const ProfilePage = () => {
   const [tfaSetupInfo, setTfaSetupInfo] = useState<{qrCode: string, secret: string, factorId: string} | null>(null);
   const [tfaVerificationCode, setTfaVerificationCode] = useState('');
   const [isTfaEnabled, setIsTfaEnabled] = useState(false);
-  const [isTfaLoading, setIsTfaLoading] = useState(true);
+  const [isTfaLoading, setIsLoadingTfa] = useState(true);
   const [deletingAccount, setDeletingAccount] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchProfile();
       const checkTfa = async () => {
-        setIsTfaLoading(true);
+        setIsLoadingTfa(true);
         const { data, error } = await supabase.auth.mfa.listFactors();
         if (error) {
             console.error('Error listing MFA factors:', error);
@@ -54,7 +54,7 @@ const ProfilePage = () => {
             const isEnabled = data.totp.some(factor => factor.status === 'verified');
             setIsTfaEnabled(isEnabled);
         }
-        setIsTfaLoading(false);
+        setIsLoadingTfa(false);
       }
       checkTfa();
     }

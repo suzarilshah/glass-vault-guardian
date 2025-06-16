@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -126,8 +125,8 @@ const AuthForm: React.FC<AuthFormProps> = ({
         // Check if user has MFA enabled
         const hasMfaEnabled = await checkMfaStatus(data.user.id);
         
-        // Check the user's AAL level - if aal1 and MFA is enabled, prompt for 2FA
-        if (data.session.user.aal === 'aal1' && hasMfaEnabled) {
+        // Check the session's AAL level - if aal1 and MFA is enabled, prompt for 2FA
+        if (data.session.aal === 'aal1' && hasMfaEnabled) {
           setIsMfaChallenge(true);
         } else {
           toast({ title: "Welcome back!", description: "Successfully signed in." });
