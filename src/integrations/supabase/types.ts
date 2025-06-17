@@ -435,6 +435,51 @@ export type Database = {
         }
         Relationships: []
       }
+      vault_settings: {
+        Row: {
+          api_retention_days: number | null
+          auto_lock_minutes: number | null
+          certificate_retention_days: number | null
+          created_at: string
+          enable_biometric: boolean | null
+          enable_clipboard_clear: boolean | null
+          enable_password_history: boolean | null
+          id: string
+          max_password_history: number | null
+          password_retention_days: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_retention_days?: number | null
+          auto_lock_minutes?: number | null
+          certificate_retention_days?: number | null
+          created_at?: string
+          enable_biometric?: boolean | null
+          enable_clipboard_clear?: boolean | null
+          enable_password_history?: boolean | null
+          id?: string
+          max_password_history?: number | null
+          password_retention_days?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_retention_days?: number | null
+          auto_lock_minutes?: number | null
+          certificate_retention_days?: number | null
+          created_at?: string
+          enable_biometric?: boolean | null
+          enable_clipboard_clear?: boolean | null
+          enable_password_history?: boolean | null
+          id?: string
+          max_password_history?: number | null
+          password_retention_days?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
