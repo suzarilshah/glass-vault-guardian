@@ -113,23 +113,30 @@ const VaultSettings: React.FC = () => {
 
     setIsLoading(true);
     try {
-      let tableName = '';
+      let error;
+      
       switch (vaultType) {
         case 'password':
-          tableName = 'password_entries';
+          ({ error } = await supabase
+            .from('password_entries')
+            .delete()
+            .eq('user_id', user.id));
           break;
         case 'api':
-          tableName = 'api_entries';
+          ({ error } = await supabase
+            .from('api_entries')
+            .delete()
+            .eq('user_id', user.id));
           break;
         case 'certificate':
-          tableName = 'certificate_entries';
+          ({ error } = await supabase
+            .from('certificate_entries')
+            .delete()
+            .eq('user_id', user.id));
           break;
+        default:
+          throw new Error('Invalid vault type');
       }
-
-      const { error } = await supabase
-        .from(tableName)
-        .delete()
-        .eq('user_id', user.id);
 
       if (error) {
         toast({
