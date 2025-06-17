@@ -7,13 +7,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface PasswordRequirements {
+  includeNumbers: boolean;
+  includeLowercase: boolean;
+  includeUppercase: boolean;
+  includeSpecialChars: boolean;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { keywords } = await req.json();
+    const { keywords, requirements }: { keywords: string; requirements?: PasswordRequirements } = await req.json();
 
     if (!keywords) {
       return new Response(
@@ -36,20 +43,32 @@ serve(async (req) => {
       );
     }
 
-    const prompt = `Generate 4 highly secure passwords based on these keywords: "${keywords}". 
+    // Build requirements string
+    const reqList = [];
+    if (requirements?.includeUppercase) reqList.push('uppercase letters');
+    if (requirements?.includeLowercase) reqList.push('lowercase letters');
+    if (requirements?.includeNumbers) reqList.push('numbers');
+    if (requirements?.includeSpecialChars) reqList.push('special characters');
+    
+    const requirementsText = reqList.length > 0 
+      ? `Must include: ${reqList.join(', ')}.` 
+      : 'Use a balanced mix of character types.';
+
+    const prompt = `Generate 3-4 highly secure and memorable passwords based on these keywords: "${keywords}". 
 
 Requirements:
 - Each password must be 12-16 characters long
-- Include uppercase, lowercase, numbers, and special characters
+- ${requirementsText}
 - Be memorable but cryptographically strong
 - Incorporate the keywords creatively (obfuscated, not literally)
 - Each should have different security patterns
+- Focus on creating passwords that are both secure AND easy to remember
 
 Return ONLY a valid JSON array with this exact format:
 [
   {
     "password": "example123!",
-    "explanation": "Brief explanation of how keywords were incorporated",
+    "explanation": "Brief explanation of how keywords were incorporated and why it's memorable",
     "strength": "Very Strong"
   }
 ]`;
@@ -65,7 +84,7 @@ Return ONLY a valid JSON array with this exact format:
         messages: [
           {
             role: 'system',
-            content: 'You are a cybersecurity expert specializing in password generation. Always return valid JSON arrays only.'
+            content: 'You are a cybersecurity expert specializing in creating secure, memorable passwords. Always return valid JSON arrays only.'
           },
           {
             role: 'user',

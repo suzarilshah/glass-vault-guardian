@@ -6,7 +6,6 @@ import { calculateCrackTime } from '@/utils/passwordUtils';
 import { calculatePasswordScore } from '@/utils/passwordScoring';
 import { checkPasswordBreach } from '@/utils/breachChecker';
 import { useAuth } from '@/contexts/AuthContext';
-import KeywordObfuscator from './KeywordObfuscator';
 import PasswordAnalyzer from './PasswordAnalyzer';
 import SavePasswordModal from './SavePasswordModal';
 import GeneratedPasswordDisplay from './generator/GeneratedPasswordDisplay';
@@ -71,10 +70,6 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
     setCurrentTab('analyzer');
   };
 
-  const handleKeywordPasswordGenerated = (keywordPassword: string) => {
-    setPassword(keywordPassword);
-  };
-
   const handleAIPasswordGenerated = (aiPassword: string) => {
     setPassword(aiPassword);
   };
@@ -115,13 +110,22 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
             breach={generatedPasswordBreach}
           />
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <PasswordCustomization
-              options={options}
-              onOptionsChange={setOptions}
-            />
-            <KeywordObfuscator onPasswordGenerated={handleKeywordPasswordGenerated} />
-            <AIKeywordObfuscator onPasswordGenerated={handleAIPasswordGenerated} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-6">
+              <h3 className="text-xl font-semibold text-white">Random Password Generator</h3>
+              <PasswordCustomization
+                options={options}
+                onOptionsChange={setOptions}
+              />
+            </div>
+            
+            <div className="space-y-6">
+              <h3 className="text-xl font-semibold text-white">AI-Powered Generation</h3>
+              <AIKeywordObfuscator 
+                onPasswordGenerated={handleAIPasswordGenerated} 
+                onAnalyzePassword={handleAnalyzeWithAI}
+              />
+            </div>
           </div>
         </TabsContent>
 
