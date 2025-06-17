@@ -1,12 +1,12 @@
-
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Save } from 'lucide-react';
+import { Save, Upload, FileText } from 'lucide-react';
 import { CertificateGroup, CertificateEntry, CertificateFormData } from '@/types/certificateVault';
+import { useToast } from '@/hooks/use-toast';
 
 interface CertificateFormProps {
   formData: CertificateFormData;
@@ -25,11 +25,117 @@ const CertificateForm: React.FC<CertificateFormProps> = ({
   onSave,
   onCancel
 }) => {
+  const { toast } = useToast();
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      processFile(file);
+    }
+  };
+
+  const handleFileDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setDragOver(false);
+    
+    const file = event.dataTransfer.files[0];
+    if (file) {
+      processFile(file);
+    }
+  };
+
+  const processFile = async (file: File) => {
+    try {
+      const content = await file.text();
+      
+      // Parse certificate content
+      const certMatch = content.match(/-----BEGIN CERTIFICATE-----([\s\S]*?)-----END CERTIFICATE-----/);
+      const keyMatch = content.match(/-----BEGIN PRIVATE KEY-----([\s\S]*?)-----END PRIVATE KEY-----/);
+      
+      if (certMatch) {
+        const certificateContent = `-----BEGIN CERTIFICATE-----${certMatch[1]}-----END CERTIFICATE-----`;
+        onFormDataChange({ certificate_file: certificateContent });
+        toast({
+          title: "Certificate Loaded",
+          description: "Public certificate has been loaded successfully",
+        });
+      }
+      
+      if (keyMatch) {
+        const privateKeyContent = `-----BEGIN PRIVATE KEY-----${keyMatch[1]}-----END PRIVATE KEY-----`;
+        onFormDataChange({ private_key: privateKeyContent });
+        toast({
+          title: "Private Key Loaded",
+          description: "Private key has been loaded successfully",
+        });
+      }
+      
+      if (!certMatch && !keyMatch) {
+        toast({
+          title: "Invalid File",
+          description: "No valid certificate or private key found in the file",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to read certificate file",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setDragOver(false);
+  };
+
   return (
     <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
       <h3 className="text-lg font-semibold text-white mb-4">
         {editingEntry ? 'Edit Certificate' : 'Add New Certificate'}
       </h3>
+      
+      {/* File Upload Area */}
+      <div
+        className={`mb-6 border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+          dragOver 
+            ? 'border-green-400 bg-green-400/10' 
+            : 'border-white/30 bg-white/5 hover:border-white/50'
+        }`}
+        onDrop={handleFileDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+      >
+        <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+        <p className="text-white mb-2">Drop certificate files here or click to upload</p>
+        <p className="text-sm text-gray-400 mb-4">
+          Supports .pem, .crt, .key files. Will automatically detect and parse certificates and private keys.
+        </p>
+        <input
+          type="file"
+          id="certificate-upload"
+          className="hidden"
+          accept=".pem,.crt,.key,.txt"
+          onChange={handleFileUpload}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => document.getElementById('certificate-upload')?.click()}
+          className="border-white/20 text-gray-300 hover:bg-gray-700 hover:text-white"
+        >
+          <Upload className="w-4 h-4 mr-2" />
+          Browse Files
+        </Button>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -163,7 +269,7 @@ const CertificateForm: React.FC<CertificateFormProps> = ({
           </label>
           <p className="text-xs text-gray-400 mb-2">The public certificate in PEM format (begins with -----BEGIN CERTIFICATE-----)</p>
           <Textarea
-            placeholder="Paste the certificate file content here"
+            placeholder="Paste the certificate file content here or use the file upload above"
             value={formData.certificate_file}
             onChange={(e) => onFormDataChange({ certificate_file: e.target.value })}
             className="glass-input bg-white/5 border-white/20 text-white font-mono text-sm"
@@ -177,7 +283,7 @@ const CertificateForm: React.FC<CertificateFormProps> = ({
           </label>
           <p className="text-xs text-gray-400 mb-2">The private key in PEM format (begins with -----BEGIN PRIVATE KEY-----). This field is optional but recommended for full certificate management.</p>
           <Textarea
-            placeholder="Paste the private key content here (optional)"
+            placeholder="Paste the private key content here or use the file upload above (optional)"
             value={formData.private_key}
             onChange={(e) => onFormDataChange({ private_key: e.target.value })}
             className="glass-input bg-white/5 border-white/20 text-white font-mono text-sm"

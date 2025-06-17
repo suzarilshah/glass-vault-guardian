@@ -11,6 +11,7 @@ import PasswordAnalyzer from './PasswordAnalyzer';
 import SavePasswordModal from './SavePasswordModal';
 import GeneratedPasswordDisplay from './generator/GeneratedPasswordDisplay';
 import PasswordCustomization from './generator/PasswordCustomization';
+import AIKeywordObfuscator from './generator/AIKeywordObfuscator';
 import { usePasswordGeneration } from '@/hooks/usePasswordGeneration';
 
 interface PasswordGeneratorProps {
@@ -74,6 +75,10 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
     setPassword(keywordPassword);
   };
 
+  const handleAIPasswordGenerated = (aiPassword: string) => {
+    setPassword(aiPassword);
+  };
+
   const generatedPasswordCrackTime = password ? calculateCrackTime(password) : null;
   const generatedPasswordBreach = password ? checkPasswordBreach(password) : null;
   const passwordScore = password ? calculatePasswordScore(password) : null;
@@ -110,12 +115,13 @@ const PasswordGenerator: React.FC<PasswordGeneratorProps> = () => {
             breach={generatedPasswordBreach}
           />
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <PasswordCustomization
               options={options}
               onOptionsChange={setOptions}
             />
             <KeywordObfuscator onPasswordGenerated={handleKeywordPasswordGenerated} />
+            <AIKeywordObfuscator onPasswordGenerated={handleAIPasswordGenerated} />
           </div>
         </TabsContent>
 
