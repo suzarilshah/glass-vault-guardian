@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -5,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, User, Mail, Save, AlertTriangle, Lock, Key, Shield, Settings, Phone } from 'lucide-react';
+import { ArrowLeft, User, Mail, Save, AlertTriangle, Lock, Settings, Phone, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -16,6 +17,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/comp
 import { ShieldCheck } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import MasterPasswordSettings from '@/components/vault/MasterPasswordSettings';
+import VaultSettings from '@/components/vault/VaultSettings';
 
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
@@ -379,7 +381,7 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center gap-4 mb-8">
           <Button
@@ -391,28 +393,28 @@ const ProfilePage = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Vault
           </Button>
-          <h1 className="text-3xl font-bold text-white">Profile Settings</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-white">Profile Settings</h1>
         </div>
 
         <Tabs defaultValue="personal" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8 bg-white/10 backdrop-blur-xl border-white/20">
-            <TabsTrigger value="personal" className="flex items-center gap-2 text-white data-[state=active]:bg-white data-[state=active]:text-gray-900">
+          <TabsList className="grid w-full grid-cols-3 mb-8 bg-white/10 backdrop-blur-xl border-white/20 overflow-x-auto">
+            <TabsTrigger value="personal" className="flex items-center gap-2 text-white data-[state=active]:bg-white data-[state=active]:text-gray-900 text-xs md:text-sm whitespace-nowrap">
               <User className="w-4 h-4" />
               Personal
             </TabsTrigger>
-            <TabsTrigger value="master-password" className="flex items-center gap-2 text-white data-[state=active]:bg-white data-[state=active]:text-gray-900">
-              <Key className="w-4 h-4" />
-              Master Password
-            </TabsTrigger>
-            <TabsTrigger value="account-security" className="flex items-center gap-2 text-white data-[state=active]:bg-white data-[state=active]:text-gray-900">
+            <TabsTrigger value="account-security" className="flex items-center gap-2 text-white data-[state=active]:bg-white data-[state=active]:text-gray-900 text-xs md:text-sm whitespace-nowrap">
               <Lock className="w-4 h-4" />
               Account Security
+            </TabsTrigger>
+            <TabsTrigger value="vault-settings" className="flex items-center gap-2 text-white data-[state=active]:bg-white data-[state=active]:text-gray-900 text-xs md:text-sm whitespace-nowrap">
+              <Settings className="w-4 h-4" />
+              Vault Settings
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="personal">
             <div className="space-y-6">
-              <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
+              <Card className="glass-card p-4 md:p-6 bg-white/5 backdrop-blur-xl border-white/20">
                 <div className="flex items-center gap-2 mb-4">
                   <User className="w-5 h-5 text-white" />
                   <h2 className="text-xl font-semibold text-white">Personal Information</h2>
@@ -484,8 +486,8 @@ const ProfilePage = () => {
                 </div>
               </Card>
 
-              {/* Account Deactivation Section moved to Personal tab */}
-              <Card className="glass-card p-6 bg-red-900/10 backdrop-blur-xl border-red-500/30">
+              {/* Account Deactivation Section */}
+              <Card className="glass-card p-4 md:p-6 bg-red-900/10 backdrop-blur-xl border-red-500/30">
                 <div className="flex items-center gap-2 mb-4">
                   <AlertTriangle className="w-5 h-5 text-red-400" />
                   <h2 className="text-xl font-semibold text-red-400">Danger Zone</h2>
@@ -538,13 +540,9 @@ const ProfilePage = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="master-password">
-            <MasterPasswordSettings profile={profile} />
-          </TabsContent>
-
           <TabsContent value="account-security">
             <div className="space-y-6">
-              <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
+              <Card className="glass-card p-4 md:p-6 bg-white/5 backdrop-blur-xl border-white/20">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <Lock className="w-5 h-5 text-white" />
@@ -612,8 +610,11 @@ const ProfilePage = () => {
                 )}
               </Card>
 
-              {/* 2FA Section moved to Account Security tab */}
-              <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
+              {/* Master Password Settings */}
+              <MasterPasswordSettings profile={profile} />
+
+              {/* 2FA Section */}
+              <Card className="glass-card p-4 md:p-6 bg-white/5 backdrop-blur-xl border-white/20">
                 <div className="flex items-center gap-2 mb-4">
                   <ShieldCheck className="w-5 h-5 text-white" />
                   <h2 className="text-xl font-semibold text-white">Two-Factor Authentication (2FA)</h2>
@@ -637,7 +638,7 @@ const ProfilePage = () => {
                       <div className="space-y-4">
                         <p className="text-gray-300">Scan this QR code with your authenticator app (e.g., Google Authenticator, Authy).</p>
                         <div className="bg-white p-2 rounded-lg inline-block">
-                          <img src={tfaSetupInfo.qrCode} alt="2FA QR Code" />
+                          <img src={tfaSetupInfo.qrCode} alt="2FA QR Code" className="max-w-full h-auto" />
                         </div>
                         <p className="text-gray-300 text-sm">Or manually enter this setup key:</p>
                         <code className="bg-gray-800 text-green-400 p-2 rounded-md block break-all">{tfaSetupInfo.secret}</code>
@@ -659,7 +660,7 @@ const ProfilePage = () => {
                           </InputOTP>
                         </div>
 
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <Button onClick={handleVerifyTfa} className="bg-green-600 hover:bg-green-700 text-white">Verify and Enable</Button>
                           <Button onClick={handleCancelTfaSetup} variant="outline" className="bg-transparent border-gray-400 text-gray-300 hover:bg-gray-700">Cancel</Button>
                         </div>
@@ -679,6 +680,10 @@ const ProfilePage = () => {
                 )}
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="vault-settings">
+            <VaultSettings />
           </TabsContent>
         </Tabs>
       </div>

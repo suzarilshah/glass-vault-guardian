@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import AdvancedPasswordStrengthIndicator from './AdvancedPasswordStrengthIndicator';
 import { analyzePasswordStrength } from '@/utils/passwordStrength';
-import bcrypt from 'crypto-js';
+import { hashMasterPassword } from '@/utils/encryption';
 
 interface MasterPasswordSettingsProps {
   profile: {
@@ -100,7 +100,67 @@ const MasterPasswordSettings: React.FC<MasterPasswordSettingsProps> = ({ profile
     };
   };
 
+  const verifyCurrentMasterPassword = async (currentPassword: string): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const hashedCurrentPassword = hashMasterPassword(currentPassword);
+      
+      // Check unified password first
+      const { data: unifiedData, error: unifiedError } = await supabase
+        .from('user_master_passwords')
+        .select('master_password_hash')
+        .eq('user_id', user.id)
+        .eq('use_unified_password', true)
+        .maybeSingle();
+
+      if (!unifiedError && unifiedData) {
+        return unifiedData.master_password_hash === hashedCurrentPassword;
+      }
+
+      // Check password vault specific password
+      const { data, error } = await supabase
+        .from('user_master_passwords')
+        .select('master_password_hash')
+        .eq('user_id', user.id)
+        .eq('vault_type', 'password')
+        .eq('use_unified_password', false)
+        .maybeSingle();
+
+      if (!error && data) {
+        return data.master_password_hash === hashedCurrentPassword;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Error verifying current master password:', error);
+      return false;
+    }
+  };
+
   const handleMasterPasswordChange = async () => {
+    // Validate current password if changing existing master password
+    if (hasMasterPassword) {
+      if (!passwordData.currentMasterPassword) {
+        toast({
+          title: "Current Password Required",
+          description: "Please enter your current master password",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const isCurrentPasswordValid = await verifyCurrentMasterPassword(passwordData.currentMasterPassword);
+      if (!isCurrentPasswordValid) {
+        toast({
+          title: "Invalid Current Password",
+          description: "The current master password is incorrect",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     const validation = validateMasterPassword(passwordData.newMasterPassword, profile.first_name, profile.last_name);
     
     if (!validation.isValid) {
@@ -133,7 +193,7 @@ const MasterPasswordSettings: React.FC<MasterPasswordSettingsProps> = ({ profile
 
     setIsLoading(true);
     try {
-      const hashedPassword = bcrypt.SHA256(passwordData.newMasterPassword).toString();
+      const hashedPassword = hashMasterPassword(passwordData.newMasterPassword);
       
       const { error } = await supabase
         .from('user_master_passwords')
@@ -156,7 +216,7 @@ const MasterPasswordSettings: React.FC<MasterPasswordSettingsProps> = ({ profile
 
       toast({
         title: "Success",
-        description: "Master password updated successfully"
+        description: hasMasterPassword ? "Master password updated successfully" : "Master password set successfully"
       });
       
       setPasswordData({
@@ -210,6 +270,22 @@ const MasterPasswordSettings: React.FC<MasterPasswordSettingsProps> = ({ profile
 
       {showPasswordSection && (
         <div className="space-y-4">
+          {hasMasterPassword && (
+            <div>
+              <Label htmlFor="currentMasterPassword" className="text-gray-300">
+                Current Master Password
+              </Label>
+              <Input
+                id="currentMasterPassword"
+                type="password"
+                value={passwordData.currentMasterPassword}
+                onChange={(e) => setPasswordData(prev => ({ ...prev, currentMasterPassword: e.target.value }))}
+                className="glass-input bg-white/5 border-white/20 text-white"
+                placeholder="Enter current master password"
+              />
+            </div>
+          )}
+
           <div>
             <Label htmlFor="newMasterPassword" className="text-gray-300">
               {hasMasterPassword ? 'New Master Password' : 'Master Password'}

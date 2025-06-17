@@ -33,10 +33,10 @@ const ApiEntryCard: React.FC<ApiEntryCardProps> = ({
   return (
     <Card className="glass-card p-4 bg-white/5 backdrop-blur-xl border-white/20 hover:border-white/30 transition-all">
       <div className="flex items-start justify-between mb-3">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-white mb-1">{entry.title}</h3>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-lg font-semibold text-white mb-1 truncate">{entry.title}</h3>
           {entry.api_name && (
-            <p className="text-sm text-gray-300 mb-1">{entry.api_name}</p>
+            <p className="text-sm text-gray-300 mb-1 truncate">{entry.api_name}</p>
           )}
           {entry.environment && (
             <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
@@ -52,7 +52,7 @@ const ApiEntryCard: React.FC<ApiEntryCardProps> = ({
         </div>
         
         {entry.is_expired && (
-          <div className="flex items-center gap-1 text-red-400">
+          <div className="flex items-center gap-1 text-red-400 flex-shrink-0 ml-2">
             <AlertTriangle className="w-4 h-4" />
             <span className="text-xs">Expired</span>
           </div>
@@ -63,29 +63,31 @@ const ApiEntryCard: React.FC<ApiEntryCardProps> = ({
         <div className="mb-3">
           <label className="block text-xs text-gray-400 mb-1">Endpoint URL</label>
           <div className="flex items-center gap-2">
-            <code className="flex-1 text-sm bg-gray-800 text-green-400 p-2 rounded font-mono break-all">
+            <code className="flex-1 text-sm bg-gray-800 text-green-400 p-2 rounded font-mono break-all min-w-0">
               {entry.endpoint_url}
             </code>
-            <Button
-              onClick={() => copyToClipboard(entry.endpoint_url!)}
-              size="sm"
-              variant="ghost"
-              className="text-blue-400 hover:text-blue-300 p-1 h-8 w-8"
-              title="Copy endpoint URL to clipboard"
-            >
-              <Copy className="w-4 h-4" />
-            </Button>
-            {entry.endpoint_url.startsWith('http') && (
+            <div className="flex gap-1 flex-shrink-0">
               <Button
-                onClick={() => window.open(entry.endpoint_url, '_blank')}
+                onClick={() => copyToClipboard(entry.endpoint_url!)}
                 size="sm"
                 variant="ghost"
                 className="text-blue-400 hover:text-blue-300 p-1 h-8 w-8"
-                title="Open endpoint URL in new tab"
+                title="Copy endpoint URL to clipboard"
               >
-                <ExternalLink className="w-4 h-4" />
+                <Copy className="w-4 h-4" />
               </Button>
-            )}
+              {entry.endpoint_url.startsWith('http') && (
+                <Button
+                  onClick={() => window.open(entry.endpoint_url, '_blank')}
+                  size="sm"
+                  variant="ghost"
+                  className="text-blue-400 hover:text-blue-300 p-1 h-8 w-8"
+                  title="Open endpoint URL in new tab"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -94,35 +96,12 @@ const ApiEntryCard: React.FC<ApiEntryCardProps> = ({
         <div>
           <label className="block text-xs text-gray-400 mb-1">API Key</label>
           <div className="flex items-center gap-2">
-            <code className="flex-1 text-sm bg-gray-800 text-green-400 p-2 rounded font-mono">
-              {isVisible ? entry.api_key_encrypted : '••••••••••••••••'}
+            <code className="flex-1 text-sm bg-gray-800 text-green-400 p-2 rounded font-mono min-w-0 overflow-hidden">
+              <span className="break-all">
+                {isVisible ? entry.api_key_encrypted : '••••••••••••••••'}
+              </span>
             </code>
-            <Button
-              onClick={() => onToggleVisibility(entry.id)}
-              size="sm"
-              variant="ghost"
-              className="text-gray-400 hover:text-gray-300 p-1 h-8 w-8"
-            >
-              {isVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </Button>
-            <Button
-              onClick={() => onCopy(entry.id, 'api_key')}
-              size="sm"
-              variant="ghost"
-              className="text-blue-400 hover:text-blue-300 p-1 h-8 w-8"
-            >
-              <Copy className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-
-        {entry.api_secret_encrypted && (
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">API Secret</label>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 text-sm bg-gray-800 text-green-400 p-2 rounded font-mono">
-                {isVisible ? entry.api_secret_encrypted : '••••••••••••••••'}
-              </code>
+            <div className="flex gap-1 flex-shrink-0">
               <Button
                 onClick={() => onToggleVisibility(entry.id)}
                 size="sm"
@@ -132,7 +111,7 @@ const ApiEntryCard: React.FC<ApiEntryCardProps> = ({
                 {isVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </Button>
               <Button
-                onClick={() => onCopy(entry.id, 'api_secret')}
+                onClick={() => onCopy(entry.id, 'api_key')}
                 size="sm"
                 variant="ghost"
                 className="text-blue-400 hover:text-blue-300 p-1 h-8 w-8"
@@ -141,13 +120,44 @@ const ApiEntryCard: React.FC<ApiEntryCardProps> = ({
               </Button>
             </div>
           </div>
+        </div>
+
+        {entry.api_secret_encrypted && (
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">API Secret</label>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-sm bg-gray-800 text-green-400 p-2 rounded font-mono min-w-0 overflow-hidden">
+                <span className="break-all">
+                  {isVisible ? entry.api_secret_encrypted : '••••••••••••••••'}
+                </span>
+              </code>
+              <div className="flex gap-1 flex-shrink-0">
+                <Button
+                  onClick={() => onToggleVisibility(entry.id)}
+                  size="sm"
+                  variant="ghost"
+                  className="text-gray-400 hover:text-gray-300 p-1 h-8 w-8"
+                >
+                  {isVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </Button>
+                <Button
+                  onClick={() => onCopy(entry.id, 'api_secret')}
+                  size="sm"
+                  variant="ghost"
+                  className="text-blue-400 hover:text-blue-300 p-1 h-8 w-8"
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
       {entry.description && (
         <div className="mt-3">
           <label className="block text-xs text-gray-400 mb-1">Description</label>
-          <p className="text-sm text-gray-300">{entry.description}</p>
+          <p className="text-sm text-gray-300 break-words">{entry.description}</p>
         </div>
       )}
 

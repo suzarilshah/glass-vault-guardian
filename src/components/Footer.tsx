@@ -11,7 +11,7 @@ const Footer = () => {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Shield className="w-6 h-6 text-green-400" />
-              <h3 className="text-lg font-semibold text-white">AI PW Shield</h3>
+              <h3 className="text-lg font-semibold text-white">Shielder</h3>
             </div>
             <p className="text-gray-400 text-sm">
               Your trusted companion for generating secure passwords and managing your digital vault with military-grade encryption and AI-powered security analysis.
@@ -91,13 +91,13 @@ const Footer = () => {
               target="_blank" 
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-gray-400 hover:text-green-400 transition-colors text-sm"
-              aria-label="View AI PW Shield source code on GitHub"
+              aria-label="View Shielder source code on GitHub"
             >
               <Github className="w-4 h-4" />
               <span>Open Source</span>
             </a>
             <span className="text-gray-500 text-sm">
-              © 2025 AI PW Shield - All rights reserved
+              © 2025 Shielder - All rights reserved
             </span>
           </div>
         </div>
