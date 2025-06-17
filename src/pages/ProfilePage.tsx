@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -396,7 +395,7 @@ const ProfilePage = () => {
         </div>
 
         <Tabs defaultValue="personal" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-8 bg-white/10 backdrop-blur-xl border-white/20">
+          <TabsList className="grid w-full grid-cols-3 mb-8 bg-white/10 backdrop-blur-xl border-white/20">
             <TabsTrigger value="personal" className="flex items-center gap-2 text-white data-[state=active]:bg-white data-[state=active]:text-gray-900">
               <User className="w-4 h-4" />
               Personal
@@ -409,88 +408,134 @@ const ProfilePage = () => {
               <Lock className="w-4 h-4" />
               Account Security
             </TabsTrigger>
-            <TabsTrigger value="two-factor" className="flex items-center gap-2 text-white data-[state=active]:bg-white data-[state=active]:text-gray-900">
-              <ShieldCheck className="w-4 h-4" />
-              2FA
-            </TabsTrigger>
-            <TabsTrigger value="account-management" className="flex items-center gap-2 text-white data-[state=active]:bg-white data-[state=active]:text-gray-900">
-              <Settings className="w-4 h-4" />
-              Account
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="personal">
-            <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
-              <div className="flex items-center gap-2 mb-4">
-                <User className="w-5 h-5 text-white" />
-                <h2 className="text-xl font-semibold text-white">Personal Information</h2>
-              </div>
+            <div className="space-y-6">
+              <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
+                <div className="flex items-center gap-2 mb-4">
+                  <User className="w-5 h-5 text-white" />
+                  <h2 className="text-xl font-semibold text-white">Personal Information</h2>
+                </div>
 
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="firstName" className="text-gray-300">First Name</Label>
+                      <Input
+                        id="firstName"
+                        value={profile.first_name}
+                        onChange={(e) => setProfile(prev => ({ ...prev, first_name: e.target.value }))}
+                        className="glass-input bg-white/5 border-white/20 text-white"
+                        placeholder="Enter your first name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="lastName" className="text-gray-300">Last Name</Label>
+                      <Input
+                        id="lastName"
+                        value={profile.last_name}
+                        onChange={(e) => setProfile(prev => ({ ...prev, last_name: e.target.value }))}
+                        className="glass-input bg-white/5 border-white/20 text-white"
+                        placeholder="Enter your last name"
+                      />
+                    </div>
+                  </div>
+
                   <div>
-                    <Label htmlFor="firstName" className="text-gray-300">First Name</Label>
-                    <Input
-                      id="firstName"
-                      value={profile.first_name}
-                      onChange={(e) => setProfile(prev => ({ ...prev, first_name: e.target.value }))}
-                      className="glass-input bg-white/5 border-white/20 text-white"
-                      placeholder="Enter your first name"
-                    />
+                    <Label htmlFor="email" className="text-gray-300">Email</Label>
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-gray-400" />
+                      <Input
+                        id="email"
+                        type="email"
+                        value={profile.email}
+                        onChange={(e) => setProfile(prev => ({ ...prev, email: e.target.value }))}
+                        className="glass-input bg-white/5 border-white/20 text-white"
+                        placeholder="Enter your email"
+                      />
+                    </div>
                   </div>
+
                   <div>
-                    <Label htmlFor="lastName" className="text-gray-300">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      value={profile.last_name}
-                      onChange={(e) => setProfile(prev => ({ ...prev, last_name: e.target.value }))}
-                      className="glass-input bg-white/5 border-white/20 text-white"
-                      placeholder="Enter your last name"
-                    />
+                    <Label htmlFor="phone" className="text-gray-300">Phone Number</Label>
+                    <p className="text-sm text-gray-400 mb-2">Optional - May be used for future 2FA implementation or account recovery</p>
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-gray-400" />
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={profile.phone_number}
+                        onChange={(e) => setProfile(prev => ({ ...prev, phone_number: e.target.value }))}
+                        className="glass-input bg-white/5 border-white/20 text-white"
+                        placeholder="Enter your phone number (e.g., +1234567890)"
+                      />
+                    </div>
                   </div>
+
+                  <Button
+                    onClick={handleSave}
+                    disabled={isLoading}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {isLoading ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </div>
+              </Card>
+
+              {/* Account Deactivation Section moved to Personal tab */}
+              <Card className="glass-card p-6 bg-red-900/10 backdrop-blur-xl border-red-500/30">
+                <div className="flex items-center gap-2 mb-4">
+                  <AlertTriangle className="w-5 h-5 text-red-400" />
+                  <h2 className="text-xl font-semibold text-red-400">Danger Zone</h2>
                 </div>
 
-                <div>
-                  <Label htmlFor="email" className="text-gray-300">Email</Label>
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-gray-400" />
-                    <Input
-                      id="email"
-                      type="email"
-                      value={profile.email}
-                      onChange={(e) => setProfile(prev => ({ ...prev, email: e.target.value }))}
-                      className="glass-input bg-white/5 border-white/20 text-white"
-                      placeholder="Enter your email"
-                    />
+                <div className="space-y-6">
+                  <div className="p-4 bg-red-900/30 border border-red-600/50 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="w-6 h-6 text-red-400 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <h3 className="text-red-400 font-bold text-lg mb-2">⚠️ CRITICAL WARNING ⚠️</h3>
+                        <p className="text-red-200 font-medium mb-3">
+                          ACCOUNT DEACTIVATION IS COMPLETELY IRREVERSIBLE AND PERMANENT
+                        </p>
+                        <div className="text-red-100 text-sm space-y-2">
+                          <p><strong>What will be permanently deleted:</strong></p>
+                          <ul className="list-disc ml-5 space-y-1">
+                            <li>Your user account and all authentication data</li>
+                            <li>ALL stored passwords and password history</li>
+                            <li>ALL API credentials and API key histories</li>
+                            <li>ALL certificates and certificate histories</li>
+                            <li>ALL password groups and organizational data</li>
+                            <li>Your profile information and settings</li>
+                            <li>Master password configurations</li>
+                          </ul>
+                          <p className="mt-3 font-medium text-red-200">
+                            <strong>This action cannot be undone. There is no recovery process. 
+                            Your data will be gone forever.</strong>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <Label htmlFor="phone" className="text-gray-300">Phone Number</Label>
-                  <p className="text-sm text-gray-400 mb-2">Optional - May be used for future 2FA implementation or account recovery</p>
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-gray-400" />
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={profile.phone_number}
-                      onChange={(e) => setProfile(prev => ({ ...prev, phone_number: e.target.value }))}
-                      className="glass-input bg-white/5 border-white/20 text-white"
-                      placeholder="Enter your phone number (e.g., +1234567890)"
-                    />
-                  </div>
-                </div>
+                  <p className="text-gray-300 text-sm">
+                    Once you deactivate your account, you will be immediately signed out and all your data 
+                    will be permanently erased from our systems. Consider exporting your data before proceeding.
+                  </p>
 
-                <Button
-                  onClick={handleSave}
-                  disabled={isLoading}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  {isLoading ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </div>
-            </Card>
+                  <Button
+                    onClick={() => setShowDeactivateConfirm(true)}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                    disabled={deletingAccount}
+                  >
+                    <AlertTriangle className="w-4 h-4 mr-2" />
+                    {deletingAccount ? "Deleting Account..." : "Permanently Delete Account"}
+                  </Button>
+                </div>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="master-password">
@@ -498,194 +543,142 @@ const ProfilePage = () => {
           </TabsContent>
 
           <TabsContent value="account-security">
-            <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Lock className="w-5 h-5 text-white" />
-                  <h2 className="text-xl font-semibold text-white">Account Password</h2>
-                </div>
-                <Button
-                  onClick={() => setShowPasswordSection(!showPasswordSection)}
-                  variant="outline"
-                  size="sm"
-                  className="bg-white border-blue-400 text-blue-600 hover:bg-blue-50 hover:text-blue-700 border font-semibold"
-                >
-                  {showPasswordSection ? 'Cancel' : 'Change Password'}
-                </Button>
-              </div>
-
-              <div className="mb-4 p-4 bg-amber-900/20 border border-amber-600/30 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <Shield className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h3 className="text-amber-400 font-medium mb-1">Security Recommendation</h3>
-                    <p className="text-amber-200 text-sm">
-                      Your account password must be different from your master password for enhanced security. 
-                      Using the same password for both would compromise the security model of the password manager.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {showPasswordSection && (
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="newPassword" className="text-gray-300">New Password</Label>
-                    <p className="text-sm text-gray-400 mb-2">Must be different from your master password</p>
-                    <Input
-                      id="newPassword"
-                      type="password"
-                      value={passwordData.newPassword}
-                      onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
-                      className="glass-input bg-white/5 border-white/20 text-white"
-                      placeholder="Enter new password"
-                    />
-                    <AdvancedPasswordStrengthIndicator 
-                      password={passwordData.newPassword} 
-                      showDetailed={true}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="confirmPassword" className="text-gray-300">Confirm New Password</Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      value={passwordData.confirmPassword}
-                      onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                      className="glass-input bg-white/5 border-white/20 text-white"
-                      placeholder="Confirm new password"
-                    />
+            <div className="space-y-6">
+              <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-5 h-5 text-white" />
+                    <h2 className="text-xl font-semibold text-white">Account Password</h2>
                   </div>
                   <Button
-                    onClick={handlePasswordChange}
-                    className="bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => setShowPasswordSection(!showPasswordSection)}
+                    variant="outline"
+                    size="sm"
+                    className="bg-white border-blue-400 text-blue-600 hover:bg-blue-50 hover:text-blue-700 border font-semibold"
                   >
-                    Update Password
+                    {showPasswordSection ? 'Cancel' : 'Change Password'}
                   </Button>
                 </div>
-              )}
-            </Card>
-          </TabsContent>
 
-          <TabsContent value="two-factor">
-            <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
-              <div className="flex items-center gap-2 mb-4">
-                <ShieldCheck className="w-5 h-5 text-white" />
-                <h2 className="text-xl font-semibold text-white">Two-Factor Authentication (2FA)</h2>
-              </div>
-              
-              {isTfaLoading ? (
-                <Skeleton className="h-10 w-40 rounded-md bg-white/10" />
-              ) : isTfaEnabled ? (
-                <div>
-                  <p className="text-green-400 mb-4">2FA is currently enabled.</p>
-                  <Button
-                    onClick={handleDisableTfa}
-                    className="bg-red-600 hover:bg-red-700 text-white"
-                  >
-                    Disable 2FA
-                  </Button>
-                </div>
-              ) : (
-                <div>
-                  {tfaSetupInfo ? (
-                    <div className="space-y-4">
-                      <p className="text-gray-300">Scan this QR code with your authenticator app (e.g., Google Authenticator, Authy).</p>
-                      <div className="bg-white p-2 rounded-lg inline-block">
-                        <img src={tfaSetupInfo.qrCode} alt="2FA QR Code" />
-                      </div>
-                      <p className="text-gray-300 text-sm">Or manually enter this setup key:</p>
-                      <code className="bg-gray-800 text-green-400 p-2 rounded-md block break-all">{tfaSetupInfo.secret}</code>
-
-                      <div>
-                        <Label htmlFor="tfa-code" className="text-gray-300">Verification Code</Label>
-                        <InputOTP id="tfa-code" maxLength={6} value={tfaVerificationCode} onChange={setTfaVerificationCode}>
-                          <InputOTPGroup>
-                            <InputOTPSlot index={0} />
-                            <InputOTPSlot index={1} />
-                            <InputOTPSlot index={2} />
-                          </InputOTPGroup>
-                          <InputOTPSeparator />
-                          <InputOTPGroup>
-                            <InputOTPSlot index={3} />
-                            <InputOTPSlot index={4} />
-                            <InputOTPSlot index={5} />
-                          </InputOTPGroup>
-                        </InputOTP>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Button onClick={handleVerifyTfa} className="bg-green-600 hover:bg-green-700 text-white">Verify and Enable</Button>
-                        <Button onClick={handleCancelTfaSetup} variant="outline" className="bg-transparent border-gray-400 text-gray-300 hover:bg-gray-700">Cancel</Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <p className="text-gray-300 mb-4">Add an extra layer of security to your account.</p>
-                      <Button
-                        onClick={handleEnableTfa}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                      >
-                        Enable 2FA
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="account-management">
-            <Card className="glass-card p-6 bg-red-900/10 backdrop-blur-xl border-red-500/30">
-              <div className="flex items-center gap-2 mb-4">
-                <AlertTriangle className="w-5 h-5 text-red-400" />
-                <h2 className="text-xl font-semibold text-red-400">Danger Zone</h2>
-              </div>
-
-              <div className="space-y-6">
-                <div className="p-4 bg-red-900/30 border border-red-600/50 rounded-lg">
+                <div className="mb-4 p-4 bg-amber-900/20 border border-amber-600/30 rounded-lg">
                   <div className="flex items-start gap-3">
-                    <AlertTriangle className="w-6 h-6 text-red-400 mt-0.5 flex-shrink-0" />
+                    <Shield className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
                     <div>
-                      <h3 className="text-red-400 font-bold text-lg mb-2">⚠️ CRITICAL WARNING ⚠️</h3>
-                      <p className="text-red-200 font-medium mb-3">
-                        ACCOUNT DEACTIVATION IS COMPLETELY IRREVERSIBLE AND PERMANENT
+                      <h3 className="text-amber-400 font-medium mb-1">Security Recommendation</h3>
+                      <p className="text-amber-200 text-sm">
+                        Your account password must be different from your master password for enhanced security. 
+                        Using the same password for both would compromise the security model of the password manager.
                       </p>
-                      <div className="text-red-100 text-sm space-y-2">
-                        <p><strong>What will be permanently deleted:</strong></p>
-                        <ul className="list-disc ml-5 space-y-1">
-                          <li>Your user account and all authentication data</li>
-                          <li>ALL stored passwords and password history</li>
-                          <li>ALL API credentials and API key histories</li>
-                          <li>ALL certificates and certificate histories</li>
-                          <li>ALL password groups and organizational data</li>
-                          <li>Your profile information and settings</li>
-                          <li>Master password configurations</li>
-                        </ul>
-                        <p className="mt-3 font-medium text-red-200">
-                          <strong>This action cannot be undone. There is no recovery process. 
-                          Your data will be gone forever.</strong>
-                        </p>
-                      </div>
                     </div>
                   </div>
                 </div>
 
-                <p className="text-gray-300 text-sm">
-                  Once you deactivate your account, you will be immediately signed out and all your data 
-                  will be permanently erased from our systems. Consider exporting your data before proceeding.
-                </p>
+                {showPasswordSection && (
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="newPassword" className="text-gray-300">New Password</Label>
+                      <p className="text-sm text-gray-400 mb-2">Must be different from your master password</p>
+                      <Input
+                        id="newPassword"
+                        type="password"
+                        value={passwordData.newPassword}
+                        onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                        className="glass-input bg-white/5 border-white/20 text-white"
+                        placeholder="Enter new password"
+                      />
+                      <AdvancedPasswordStrengthIndicator 
+                        password={passwordData.newPassword} 
+                        showDetailed={true}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="confirmPassword" className="text-gray-300">Confirm New Password</Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        value={passwordData.confirmPassword}
+                        onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        className="glass-input bg-white/5 border-white/20 text-white"
+                        placeholder="Confirm new password"
+                      />
+                    </div>
+                    <Button
+                      onClick={handlePasswordChange}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      Update Password
+                    </Button>
+                  </div>
+                )}
+              </Card>
 
-                <Button
-                  onClick={() => setShowDeactivateConfirm(true)}
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                  disabled={deletingAccount}
-                >
-                  <AlertTriangle className="w-4 h-4 mr-2" />
-                  {deletingAccount ? "Deleting Account..." : "Permanently Delete Account"}
-                </Button>
-              </div>
-            </Card>
+              {/* 2FA Section moved to Account Security tab */}
+              <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
+                <div className="flex items-center gap-2 mb-4">
+                  <ShieldCheck className="w-5 h-5 text-white" />
+                  <h2 className="text-xl font-semibold text-white">Two-Factor Authentication (2FA)</h2>
+                </div>
+                
+                {isTfaLoading ? (
+                  <Skeleton className="h-10 w-40 rounded-md bg-white/10" />
+                ) : isTfaEnabled ? (
+                  <div>
+                    <p className="text-green-400 mb-4">2FA is currently enabled.</p>
+                    <Button
+                      onClick={handleDisableTfa}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      Disable 2FA
+                    </Button>
+                  </div>
+                ) : (
+                  <div>
+                    {tfaSetupInfo ? (
+                      <div className="space-y-4">
+                        <p className="text-gray-300">Scan this QR code with your authenticator app (e.g., Google Authenticator, Authy).</p>
+                        <div className="bg-white p-2 rounded-lg inline-block">
+                          <img src={tfaSetupInfo.qrCode} alt="2FA QR Code" />
+                        </div>
+                        <p className="text-gray-300 text-sm">Or manually enter this setup key:</p>
+                        <code className="bg-gray-800 text-green-400 p-2 rounded-md block break-all">{tfaSetupInfo.secret}</code>
+
+                        <div>
+                          <Label htmlFor="tfa-code" className="text-gray-300">Verification Code</Label>
+                          <InputOTP id="tfa-code" maxLength={6} value={tfaVerificationCode} onChange={setTfaVerificationCode}>
+                            <InputOTPGroup>
+                              <InputOTPSlot index={0} />
+                              <InputOTPSlot index={1} />
+                              <InputOTPSlot index={2} />
+                            </InputOTPGroup>
+                            <InputOTPSeparator />
+                            <InputOTPGroup>
+                              <InputOTPSlot index={3} />
+                              <InputOTPSlot index={4} />
+                              <InputOTPSlot index={5} />
+                            </InputOTPGroup>
+                          </InputOTP>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button onClick={handleVerifyTfa} className="bg-green-600 hover:bg-green-700 text-white">Verify and Enable</Button>
+                          <Button onClick={handleCancelTfaSetup} variant="outline" className="bg-transparent border-gray-400 text-gray-300 hover:bg-gray-700">Cancel</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-gray-300 mb-4">Add an extra layer of security to your account.</p>
+                        <Button
+                          onClick={handleEnableTfa}
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          Enable 2FA
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
