@@ -130,7 +130,7 @@ const CertificateForm: React.FC<CertificateFormProps> = ({
           type="button"
           variant="outline"
           onClick={() => document.getElementById('certificate-upload')?.click()}
-          className="border-white/20 text-gray-300 hover:bg-gray-700 hover:text-white"
+          className="bg-white border-blue-400 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
         >
           <Upload className="w-4 h-4 mr-2" />
           Browse Files
@@ -310,7 +310,7 @@ const CertificateForm: React.FC<CertificateFormProps> = ({
         <Button
           onClick={onCancel}
           variant="outline"
-          className="border-white/20 text-gray-300 hover:bg-gray-700 hover:text-white"
+          className="bg-white border-blue-400 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
         >
           Cancel
         </Button>
