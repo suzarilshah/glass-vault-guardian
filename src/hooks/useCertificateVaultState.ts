@@ -15,7 +15,11 @@ export const useCertificateVaultState = () => {
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [formData, setFormData] = useState<CertificateFormData>({
     title: '',
+    certificate_file: '',
+    private_key: '',
     passphrase: '',
+    common_name: '',
+    issuer: '',
     certificate_type: 'ssl',
     environment: 'production',
     group_id: '',
@@ -26,7 +30,11 @@ export const useCertificateVaultState = () => {
     setEditingEntry(null);
     setFormData({
       title: '',
+      certificate_file: '',
+      private_key: '',
       passphrase: '',
+      common_name: '',
+      issuer: '',
       certificate_type: 'ssl',
       environment: 'production',
       group_id: '',
@@ -40,7 +48,11 @@ export const useCertificateVaultState = () => {
     setEditingEntry(null);
     setFormData({
       title: '',
+      certificate_file: '',
+      private_key: '',
       passphrase: '',
+      common_name: '',
+      issuer: '',
       certificate_type: 'ssl',
       environment: 'production',
       group_id: '',

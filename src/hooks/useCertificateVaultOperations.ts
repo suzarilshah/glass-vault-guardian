@@ -105,15 +105,13 @@ export const useCertificateVaultOperations = ({
     if (!masterPassword || !formData.certificate_file) return false;
     
     try {
-      // Read certificate file
-      const certificateContent = await formData.certificate_file.text();
-      const encryptedCertificate = encryptPassword(certificateContent, masterPassword);
+      // Certificate file is now a string, not a File
+      const encryptedCertificate = encryptPassword(formData.certificate_file, masterPassword);
       
-      // Read private key file if provided
+      // Private key is now a string, not a File
       let encryptedPrivateKey = null;
-      if (formData.private_key_file) {
-        const privateKeyContent = await formData.private_key_file.text();
-        encryptedPrivateKey = encryptPassword(privateKeyContent, masterPassword);
+      if (formData.private_key) {
+        encryptedPrivateKey = encryptPassword(formData.private_key, masterPassword);
       }
       
       // Encrypt passphrase if provided
@@ -136,6 +134,8 @@ export const useCertificateVaultOperations = ({
         certificate_file_encrypted: encryptedCertificate,
         private_key_encrypted: encryptedPrivateKey,
         passphrase_encrypted: encryptedPassphrase,
+        common_name: formData.common_name,
+        issuer: formData.issuer,
         certificate_type: formData.certificate_type,
         environment: formData.environment,
         group_id: formData.group_id || null,
@@ -196,7 +196,11 @@ export const useCertificateVaultOperations = ({
 
       setFormData({ 
         title: entry.title,
+        certificate_file: entry.certificate_file_encrypted ? '••••••••' : '',
+        private_key: entry.private_key_encrypted ? '••••••••' : '',
         passphrase: entry.passphrase_encrypted ? '••••••••' : '',
+        common_name: entry.common_name || '',
+        issuer: entry.issuer || '',
         certificate_type: entry.certificate_type,
         environment: entry.environment,
         group_id: entry.group_id || '',
