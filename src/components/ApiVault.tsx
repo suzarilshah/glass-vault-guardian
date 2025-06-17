@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useApiVault } from '@/hooks/useApiVault';
 import VaultLockedScreen from '@/components/vault/VaultLockedScreen';
@@ -15,6 +14,7 @@ import ApiHistory from '@/components/vault/ApiHistory';
 import { useVaultTimer } from '@/hooks/useVaultTimer';
 import { useApiVaultImport } from '@/hooks/useApiVaultImport';
 import { useState } from 'react';
+import { ApiEntry } from '@/types/apiVault';
 
 interface ApiVaultProps {
   masterPassword: string | null;
@@ -180,13 +180,11 @@ const ApiVault: React.FC<ApiVaultProps> = ({
                 <ApiEntryCard
                   key={entry.id}
                   entry={entry}
-                  masterPassword={masterPassword || ''}
                   isVisible={visibleApiKeys.has(entry.id)}
                   onToggleVisibility={() => toggleApiKeyVisibility(entry.id)}
-                  onCopy={() => copyApiKey(entry)}
+                  onCopy={(id, type) => copyApiKey(entry)}
                   onEdit={() => editEntry(entry)}
                   onDelete={() => setDeleteConfirmEntry(entry.id)}
-                  onShowHistory={() => setHistoryEntry(entry.id)}
                 />
               ))}
             </div>

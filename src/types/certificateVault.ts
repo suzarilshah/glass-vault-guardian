@@ -28,9 +28,11 @@ export interface CertificateGroup {
 
 export interface CertificateFormData {
   title: string;
-  certificate_file?: File;
-  private_key_file?: File;
+  certificate_file: string;
+  private_key: string;
   passphrase: string;
+  common_name: string;
+  issuer: string;
   certificate_type: string;
   environment: string;
   group_id: string;
