@@ -4,7 +4,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Brain, Sparkles, Eye } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Brain, Sparkles, Copy, Save, RefreshCw, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { obfuscateKeyword } from '@/utils/passwordUtils';
@@ -25,6 +26,7 @@ interface PasswordOptions {
   includeLowercase: boolean;
   includeUppercase: boolean;
   includeSpecialChars: boolean;
+  length: number;
 }
 
 const AIKeywordObfuscator: React.FC<AIKeywordObfuscatorProps> = ({ 
@@ -40,6 +42,7 @@ const AIKeywordObfuscator: React.FC<AIKeywordObfuscatorProps> = ({
     includeLowercase: true,
     includeUppercase: true,
     includeSpecialChars: true,
+    length: 12,
   });
   const { toast } = useToast();
 
@@ -58,12 +61,7 @@ const AIKeywordObfuscator: React.FC<AIKeywordObfuscatorProps> = ({
       const { data, error } = await supabase.functions.invoke('generate-ai-passwords', {
         body: { 
           keywords: keywords.trim(),
-          requirements: {
-            includeNumbers: options.includeNumbers,
-            includeLowercase: options.includeLowercase,
-            includeUppercase: options.includeUppercase,
-            includeSpecialChars: options.includeSpecialChars,
-          }
+          requirements: options
         }
       });
 
@@ -103,24 +101,34 @@ const AIKeywordObfuscator: React.FC<AIKeywordObfuscatorProps> = ({
     }
   };
 
-  const selectPassword = (password: string) => {
+  const copyToClipboard = async (password: string) => {
+    try {
+      await navigator.clipboard.writeText(password);
+      toast({
+        title: "Password Copied",
+        description: "Password has been copied to clipboard",
+      });
+    } catch (error) {
+      toast({
+        title: "Copy Failed",
+        description: "Failed to copy password to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const saveToVault = (password: string) => {
     setSelectedPassword(password);
     onPasswordGenerated(password);
     toast({
       title: "Password Selected",
-      description: "AI-generated password has been applied",
+      description: "Password has been selected for saving to vault",
     });
   };
 
-  const handleAnalyzeSelected = () => {
-    if (!selectedPassword) {
-      toast({
-        title: "Error",
-        description: "Please select a password first",
-        variant: "destructive"
-      });
-      return;
-    }
+  const analyzePassword = (password: string) => {
+    setSelectedPassword(password);
+    onPasswordGenerated(password);
     onAnalyzePassword();
   };
 
@@ -142,6 +150,21 @@ const AIKeywordObfuscator: React.FC<AIKeywordObfuscatorProps> = ({
             onChange={(e) => setKeywords(e.target.value)}
             className="glass-input bg-white/5 border-white/20 text-white"
             onKeyDown={(e) => e.key === 'Enter' && generateAIPasswords()}
+          />
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-gray-300">Password Length</label>
+            <span className="text-sm text-green-400 font-mono">{options.length} characters</span>
+          </div>
+          <Slider
+            value={[options.length]}
+            onValueChange={(value) => setOptions(prev => ({ ...prev, length: value[0] }))}
+            max={32}
+            min={8}
+            step={1}
+            className="slider-custom"
           />
         </div>
 
@@ -182,56 +205,75 @@ const AIKeywordObfuscator: React.FC<AIKeywordObfuscatorProps> = ({
           </div>
         </div>
         
-        <Button
-          onClick={generateAIPasswords}
-          disabled={isGenerating || !keywords.trim()}
-          className="w-full glass-button bg-purple-600 hover:bg-purple-700 text-white"
-        >
-          <Sparkles className="w-4 h-4 mr-2" />
-          {isGenerating ? 'Generating...' : 'Generate AI Passwords'}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={generateAIPasswords}
+            disabled={isGenerating || !keywords.trim()}
+            className="flex-1 glass-button bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
+            {isGenerating ? 'Generating...' : 'Generate AI Passwords'}
+          </Button>
+
+          {suggestions.length > 0 && (
+            <Button
+              onClick={generateAIPasswords}
+              disabled={isGenerating}
+              variant="outline"
+              className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10 hover:border-purple-400"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
 
         {suggestions.length > 0 && (
           <div className="space-y-3 mt-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium text-gray-300">AI Suggestions:</h4>
-              {selectedPassword && (
-                <Button
-                  onClick={handleAnalyzeSelected}
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Eye className="w-4 h-4 mr-1" />
-                  Analyze Selected
-                </Button>
-              )}
-            </div>
+            <h4 className="text-sm font-medium text-gray-300">AI Suggestions:</h4>
             {suggestions.map((suggestion, index) => (
               <div 
                 key={index} 
-                className={`glass-option p-3 rounded-lg border transition-colors ${
+                className={`glass-option p-4 rounded-lg border transition-colors ${
                   selectedPassword === suggestion.password 
                     ? 'border-purple-400 bg-purple-400/10' 
                     : 'border-white/10'
                 }`}
               >
-                <div className="flex items-center justify-between mb-2">
-                  <code className="text-sm font-mono text-green-400 break-all">
+                <div className="flex items-center justify-between mb-3">
+                  <code className="text-sm font-mono text-green-400 break-all flex-1 mr-3">
                     {suggestion.password}
                   </code>
-                  <Button
-                    onClick={() => selectPassword(suggestion.password)}
-                    size="sm"
-                    className={`ml-2 ${
-                      selectedPassword === suggestion.password
-                        ? 'bg-purple-600 hover:bg-purple-700'
-                        : 'bg-green-600 hover:bg-green-700'
-                    } text-white`}
-                  >
-                    {selectedPassword === suggestion.password ? 'Selected' : 'Use'}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => copyToClipboard(suggestion.password)}
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
+                      title="Copy to clipboard"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      onClick={() => saveToVault(suggestion.password)}
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 text-green-400 hover:text-green-300 hover:bg-green-400/10"
+                      title="Save to vault"
+                    >
+                      <Save className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      onClick={() => analyzePassword(suggestion.password)}
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-3"
+                      title="Analyze with AI"
+                    >
+                      <BarChart3 className="w-4 h-4 mr-1" />
+                      AI Analysis
+                    </Button>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-400 mb-1">{suggestion.explanation}</p>
+                <p className="text-xs text-gray-400 mb-2">{suggestion.explanation}</p>
                 <span className="text-xs text-purple-400 font-medium">
                   Strength: {suggestion.strength}
                 </span>

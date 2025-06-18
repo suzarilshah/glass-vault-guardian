@@ -12,6 +12,7 @@ interface PasswordRequirements {
   includeLowercase: boolean;
   includeUppercase: boolean;
   includeSpecialChars: boolean;
+  length: number;
 }
 
 serve(async (req) => {
@@ -54,10 +55,12 @@ serve(async (req) => {
       ? `Must include: ${reqList.join(', ')}.` 
       : 'Use a balanced mix of character types.';
 
+    const passwordLength = requirements?.length || 12;
+
     const prompt = `Generate 3-4 highly secure and memorable passwords based on these keywords: "${keywords}". 
 
 Requirements:
-- Each password must be 12-16 characters long
+- Each password must be exactly ${passwordLength} characters long
 - ${requirementsText}
 - Be memorable but cryptographically strong
 - Incorporate the keywords creatively (obfuscated, not literally)
@@ -73,7 +76,7 @@ Return ONLY a valid JSON array with this exact format:
   }
 ]`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://airilshah.services.ai.azure.com/models/chat/completions?api-version=2024-05-01-preview', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${azureApiKey}`,
@@ -97,6 +100,9 @@ Return ONLY a valid JSON array with this exact format:
     });
 
     if (!response.ok) {
+      console.error(`AI API request failed: ${response.status} - ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Error response:', errorText);
       throw new Error(`AI API request failed: ${response.status}`);
     }
 
