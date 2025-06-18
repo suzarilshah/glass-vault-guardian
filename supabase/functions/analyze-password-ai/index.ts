@@ -25,16 +25,9 @@ serve(async (req) => {
       );
     }
 
-    const azureApiKey = Deno.env.get('AZURE_AI_API_KEY');
-    if (!azureApiKey) {
-      return new Response(
-        JSON.stringify({ error: 'Azure AI API key not configured' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
+    // Use the correct endpoint and API key
+    const endpoint = 'https://airilshah.services.ai.azure.com/models/chat/completions?api-version=2024-05-01-preview';
+    const apiKey = '1P2srHsEam6U2rj0HRck9NL9tJ5iEmcay63xnU8FkSo27ZDkw53jJQQJ99BEACYeBjFXJ3w3AAAAACOGmoks';
 
     const prompt = `Analyze this password for security and provide detailed insights: "${password}"
 
@@ -58,10 +51,12 @@ Please provide a comprehensive analysis in this exact JSON format:
   }
 }`;
 
-    const response = await fetch('https://airilshah.services.ai.azure.com/models/chat/completions?api-version=2024-05-01-preview', {
+    console.log('Making request to Azure AI endpoint for password analysis...');
+
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${azureApiKey}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -81,14 +76,17 @@ Please provide a comprehensive analysis in this exact JSON format:
       }),
     });
 
+    console.log('Response status:', response.status);
+
     if (!response.ok) {
-      console.error(`AI API request failed: ${response.status} - ${response.statusText}`);
       const errorText = await response.text();
-      console.error('Error response:', errorText);
-      throw new Error(`AI API request failed: ${response.status}`);
+      console.error('AI API request failed:', response.status, response.statusText, errorText);
+      throw new Error(`AI API request failed: ${response.status} - ${response.statusText}`);
     }
 
     const data = await response.json();
+    console.log('AI analysis response received successfully');
+    
     const content = data.choices[0].message.content.trim();
     
     // Parse the JSON response

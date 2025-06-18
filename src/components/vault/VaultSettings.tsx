@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Settings, Trash2, Clock, Shield, AlertTriangle, Database } from 'lucide-react';
+import { Settings, Trash2, Clock, Shield, AlertTriangle, Database, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -17,6 +16,7 @@ const VaultSettings: React.FC = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const [settings, setSettings] = useState({
     passwordRetention: '365',
     apiRetention: '180',
@@ -27,6 +27,52 @@ const VaultSettings: React.FC = () => {
     enablePasswordHistory: true,
     maxPasswordHistory: '10',
   });
+
+  const exportAllVaults = async () => {
+    if (!user) return;
+
+    setIsExporting(true);
+    try {
+      // Fetch data from all vaults
+      const [passwordsResult, apiResult, certificatesResult] = await Promise.all([
+        supabase.from('password_entries').select('*').eq('user_id', user.id),
+        supabase.from('api_entries').select('*').eq('user_id', user.id),
+        supabase.from('certificate_entries').select('*').eq('user_id', user.id),
+      ]);
+
+      const allData = {
+        passwords: passwordsResult.data || [],
+        apiEntries: apiResult.data || [],
+        certificates: certificatesResult.data || [],
+        exportedAt: new Date().toISOString(),
+        exportedBy: user.email,
+      };
+
+      // Create and download the export file
+      const jsonContent = JSON.stringify(allData, null, 2);
+      const blob = new Blob([jsonContent], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `vault_export_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Success",
+        description: "All vault data exported successfully",
+      });
+    } catch (error) {
+      console.error('Error exporting vault data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export vault data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   useEffect(() => {
     fetchVaultSettings();
@@ -172,6 +218,33 @@ const VaultSettings: React.FC = () => {
         </div>
 
         <div className="space-y-6">
+          {/* Export Section */}
+          <div>
+            <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+              <Download className="w-4 h-4" />
+              Export Data
+            </h3>
+            <div className="p-4 bg-blue-900/20 border border-blue-600/30 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-blue-400 font-medium mb-1">Export All Vault Data</h4>
+                  <p className="text-blue-200 text-sm">
+                    Export data from Password, API, and Certificate vaults to a JSON file
+                  </p>
+                </div>
+                <Button
+                  onClick={exportAllVaults}
+                  disabled={isExporting}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {isExporting ? 'Exporting...' : 'Export All Vaults'}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <Separator className="bg-white/20" />
+
           {/* Data Retention Settings */}
           <div>
             <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
