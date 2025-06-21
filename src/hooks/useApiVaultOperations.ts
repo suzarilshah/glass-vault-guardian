@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { ApiEntry, ApiFormData } from '@/types/apiVault';
 import { useAuth } from '@/contexts/AuthContext';
@@ -34,13 +35,31 @@ export const useApiVaultOperations = ({
 
       if (error) throw error;
       
-      // Ensure environment field has correct type
-      const typedData = (data || []).map(entry => ({
-        ...entry,
-        environment: (entry.environment as 'development' | 'staging' | 'production') || 'production'
-      })) as ApiEntry[];
+      // Decrypt API keys for display and ensure environment field has correct type
+      const decryptedEntries = (data || []).map(entry => {
+        try {
+          const decryptedApiKey = decryptPassword(entry.api_key_encrypted, masterPassword);
+          const decryptedApiSecret = entry.api_secret_encrypted ? decryptPassword(entry.api_secret_encrypted, masterPassword) : null;
+          
+          return {
+            ...entry,
+            api_key_encrypted: decryptedApiKey, // Store decrypted for display
+            api_secret_encrypted: decryptedApiSecret,
+            environment: (entry.environment as 'development' | 'staging' | 'production') || 'production'
+          };
+        } catch (decryptError) {
+          console.error('Error decrypting entry:', entry.id, decryptError);
+          // Return entry with placeholder if decryption fails
+          return {
+            ...entry,
+            api_key_encrypted: '••••••••••••••••',
+            api_secret_encrypted: entry.api_secret_encrypted ? '••••••••••••••••' : null,
+            environment: (entry.environment as 'development' | 'staging' | 'production') || 'production'
+          };
+        }
+      }) as ApiEntry[];
       
-      setEntries(typedData);
+      setEntries(decryptedEntries);
     } catch (error) {
       console.error('Error fetching API entries:', error);
       toast({
@@ -74,12 +93,28 @@ export const useApiVaultOperations = ({
   }, [user, toast]);
 
   const saveEntry = useCallback(async (formData: ApiFormData, editingEntry: ApiEntry | null) => {
-    if (!user || !masterPassword) return false;
+    if (!user || !masterPassword) {
+      toast({
+        title: "Error",
+        description: "User authentication or master password required",
+        variant: "destructive",
+      });
+      return false;
+    }
 
     const { 
       title, api_name, api_key, api_secret, endpoint_url, 
       description, environment, group_id, expiration_days 
     } = formData;
+
+    if (!title.trim() || !api_key.trim()) {
+      toast({
+        title: "Error",
+        description: "Title and API key are required",
+        variant: "destructive",
+      });
+      return false;
+    }
 
     try {
       const apiKeyEncrypted = encryptPassword(api_key, masterPassword);
@@ -87,24 +122,31 @@ export const useApiVaultOperations = ({
 
       const expiresAt = expiration_days ? new Date(Date.now() + parseInt(expiration_days) * 24 * 60 * 60 * 1000).toISOString() : null;
 
+      const entryData = {
+        title: title.trim(),
+        api_name: api_name?.trim() || null,
+        api_key_encrypted: apiKeyEncrypted,
+        api_secret_encrypted: apiSecretEncrypted,
+        endpoint_url: endpoint_url?.trim() || null,
+        description: description?.trim() || null,
+        environment,
+        group_id: group_id === 'all' || !group_id ? null : group_id,
+        expires_at: expiresAt,
+        updated_at: new Date().toISOString(),
+      };
+
       if (editingEntry) {
         const { error } = await supabase
           .from('api_entries')
-          .update({
-            title,
-            api_name,
-            api_key_encrypted: apiKeyEncrypted,
-            api_secret_encrypted: apiSecretEncrypted,
-            endpoint_url,
-            description,
-            environment,
-            group_id: group_id === 'all' ? null : group_id,
-            expires_at: expiresAt,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', editingEntry.id);
+          .update(entryData)
+          .eq('id', editingEntry.id)
+          .eq('user_id', user.id); // Ensure user can only update their own entries
 
-        if (error) throw error;
+        if (error) {
+          console.error('Update error:', error);
+          throw error;
+        }
+        
         toast({
           title: "Success",
           description: "API entry updated successfully",
@@ -114,19 +156,15 @@ export const useApiVaultOperations = ({
         const { error } = await supabase
           .from('api_entries')
           .insert({
+            ...entryData,
             user_id: user.id,
-            title,
-            api_name,
-            api_key_encrypted: apiKeyEncrypted,
-            api_secret_encrypted: apiSecretEncrypted,
-            endpoint_url,
-            description,
-            environment,
-            group_id: group_id === 'all' ? null : group_id,
-            expires_at: expiresAt,
           });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Insert error:', error);
+          throw error;
+        }
+        
         toast({
           title: "Success",
           description: "API entry created successfully",
@@ -138,13 +176,15 @@ export const useApiVaultOperations = ({
         title: '', api_name: '', api_key: '', api_secret: '', endpoint_url: '', 
         description: '', environment: 'production', group_id: '', expiration_days: '' 
       });
-      fetchEntries();
+      
+      // Refresh entries
+      await fetchEntries();
       return true;
     } catch (error) {
       console.error('Error saving API entry:', error);
       toast({
         title: "Error",
-        description: "Failed to save API entry",
+        description: `Failed to save API entry: ${error.message}`,
         variant: "destructive",
       });
       return false;
@@ -162,16 +202,13 @@ export const useApiVaultOperations = ({
     }
 
     try {
-      // Decrypt the API key and secret to show in the form
-      const decryptedApiKey = decryptPassword(entry.api_key_encrypted, masterPassword);
-      const decryptedApiSecret = entry.api_secret_encrypted ? decryptPassword(entry.api_secret_encrypted, masterPassword) : '';
-
+      // The entry already has decrypted keys from fetchEntries
       setEditingEntry(entry);
       setFormData({
         title: entry.title,
         api_name: entry.api_name || '',
-        api_key: decryptedApiKey,
-        api_secret: decryptedApiSecret,
+        api_key: entry.api_key_encrypted, // This is already decrypted
+        api_secret: entry.api_secret_encrypted || '',
         endpoint_url: entry.endpoint_url || '',
         description: entry.description || '',
         environment: entry.environment || 'production',
@@ -180,10 +217,10 @@ export const useApiVaultOperations = ({
       });
       setShowForm(true);
     } catch (error) {
-      console.error('Error decrypting API entry:', error);
+      console.error('Error preparing entry for editing:', error);
       toast({
         title: "Error",
-        description: "Failed to decrypt API entry. Please check your master password.",
+        description: "Failed to prepare entry for editing",
         variant: "destructive",
       });
     }
@@ -196,7 +233,8 @@ export const useApiVaultOperations = ({
       const { error } = await supabase
         .from('api_entries')
         .delete()
-        .eq('id', entryId);
+        .eq('id', entryId)
+        .eq('user_id', user.id); // Ensure user can only delete their own entries
 
       if (error) throw error;
       toast({
@@ -215,11 +253,10 @@ export const useApiVaultOperations = ({
   }, [user, fetchEntries, toast]);
 
   const copyApiKey = useCallback(async (entry: ApiEntry) => {
-    if (!masterPassword) return;
-
     try {
-      const decryptedApiKey = decryptPassword(entry.api_key_encrypted, masterPassword);
-      navigator.clipboard.writeText(decryptedApiKey);
+      // The API key is already decrypted in the entry
+      const apiKeyToCopy = entry.api_key_encrypted;
+      await navigator.clipboard.writeText(apiKeyToCopy);
       toast({
         title: "Copied!",
         description: "API key copied to clipboard",
@@ -232,7 +269,7 @@ export const useApiVaultOperations = ({
         variant: "destructive",
       });
     }
-  }, [masterPassword, toast]);
+  }, [toast]);
 
   const toggleApiKeyVisibility = useCallback((id: string, visibleApiKeys: Set<string>, setVisibleApiKeys: React.Dispatch<React.SetStateAction<Set<string>>>) => {
     setVisibleApiKeys(prev => {

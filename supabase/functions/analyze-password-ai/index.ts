@@ -36,25 +36,31 @@ serve(async (req) => {
       );
     }
 
+    // Format the analysis data properly for the AI
+    const entropyValue = currentAnalysis?.entropy || 'Unknown';
+    const crackTimeValue = currentAnalysis?.crackTime || 'Unknown';
+    const scoreValue = currentAnalysis?.passwordScore?.score || 'Unknown';
+    const breachStatus = currentAnalysis?.breachStatus?.isBreached ? 'Compromised' : 'Safe';
+
     const prompt = `Analyze this password for security and provide detailed insights: "${password}"
 
-Current analysis data:
-- Entropy: ${currentAnalysis?.entropy || 'N/A'}
-- Estimated crack time: ${currentAnalysis?.crackTime || 'N/A'}
-- Password score: ${currentAnalysis?.passwordScore?.score || 'N/A'}%
-- Breach status: ${currentAnalysis?.breachStatus?.isBreached ? 'Compromised' : 'Safe'}
+Current technical analysis data:
+- Entropy: ${entropyValue} bits
+- Estimated crack time: ${crackTimeValue}
+- Password score: ${scoreValue}%
+- Breach status: ${breachStatus}
 
 Please provide a comprehensive analysis in this exact JSON format:
 {
-  "insights": "Detailed analysis of the password's strengths and weaknesses",
+  "insights": "Detailed analysis of the password's strengths and weaknesses based on the technical data",
   "suggestions": ["Specific suggestion 1", "Specific suggestion 2", "Specific suggestion 3"],
-  "riskAssessment": "Overall risk level and explanation",
+  "riskAssessment": "Overall risk level and explanation based on the score and technical metrics",
   "improvements": ["Improvement 1", "Improvement 2"],
   "crossCheck": {
-    "scoreValidation": "Validation of the password score",
-    "entropyValidation": "Assessment of entropy calculation",
-    "timeValidation": "Assessment of crack time estimation",
-    "overallAssessment": "Final security assessment"
+    "scoreValidation": "Validation and explanation of the ${scoreValue}% password score",
+    "entropyValidation": "Assessment of the ${entropyValue} bits entropy calculation",
+    "timeValidation": "Assessment of the ${crackTimeValue} crack time estimation",
+    "overallAssessment": "Final security assessment combining all technical metrics"
   }
 }`;
 
@@ -69,7 +75,7 @@ Please provide a comprehensive analysis in this exact JSON format:
         messages: [
           {
             role: 'system',
-            content: 'You are a cybersecurity expert specializing in password analysis. Always return valid JSON only.'
+            content: 'You are a cybersecurity expert specializing in password analysis. Always return valid JSON only. Use the provided technical metrics to give accurate assessments.'
           },
           {
             role: 'user',

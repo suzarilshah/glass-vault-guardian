@@ -100,6 +100,7 @@ const PasswordAnalyzer: React.FC<PasswordAnalyzerProps> = ({ initialPassword = '
       {aiAnalysis && (
         <AIAnalysisDisplay 
           analysis={aiAnalysis}
+          originalPassword={testPassword}
           onSavePassword={(password) => {
             // TODO: Integrate with password vault
             console.log('Save password to vault:', password);
