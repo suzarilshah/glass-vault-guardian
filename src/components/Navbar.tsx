@@ -63,7 +63,7 @@ const Navbar: React.FC<NavbarProps> = ({
           {/* Logo/Brand */}
           <div className="flex items-center gap-2">
             <Shield className="w-6 h-6 text-green-400" />
-            <span className="font-bold text-white">Shielder</span>
+            <span className="font-bold text-white">AI PW Shield</span>
           </div>
 
           {/* Desktop Navigation */}

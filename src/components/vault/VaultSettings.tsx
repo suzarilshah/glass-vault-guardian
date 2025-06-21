@@ -6,21 +6,17 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Settings, Trash2, Clock, Shield, AlertTriangle, Database, Download } from 'lucide-react';
+import { Settings, Trash2, Clock, Shield, AlertTriangle, Database } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useVaultExportAll } from '@/hooks/useVaultExportAll';
 import ConfirmationDialog from './ConfirmationDialog';
-import MasterPasswordModal from '../MasterPasswordModal';
 
 const VaultSettings: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { exportAllVaults } = useVaultExportAll();
   const [isLoading, setIsLoading] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState<string | null>(null);
-  const [showExportMasterModal, setShowExportMasterModal] = useState(false);
   const [settings, setSettings] = useState({
     passwordRetention: '365',
     apiRetention: '180',
@@ -167,11 +163,6 @@ const VaultSettings: React.FC = () => {
     }
   };
 
-  const handleExportAllVaults = async (masterPassword: string) => {
-    setShowExportMasterModal(false);
-    await exportAllVaults(masterPassword);
-  };
-
   return (
     <div className="space-y-6">
       <Card className="glass-card p-6 bg-white/5 backdrop-blur-xl border-white/20">
@@ -181,35 +172,6 @@ const VaultSettings: React.FC = () => {
         </div>
 
         <div className="space-y-6">
-          {/* Data Export Section */}
-          <div>
-            <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
-              <Download className="w-4 h-4" />
-              Data Export
-            </h3>
-            <div className="p-4 bg-blue-900/20 border border-blue-600/30 rounded-lg">
-              <div className="flex items-start gap-3 mb-4">
-                <Database className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h4 className="text-blue-400 font-medium mb-1">Export All Vaults</h4>
-                  <p className="text-blue-200 text-sm mb-3">
-                    Export all data from Password, API, and Certificate vaults to a CSV file.
-                  </p>
-                  <Button
-                    onClick={() => setShowExportMasterModal(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                    disabled={isLoading}
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Export All Vaults
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <Separator className="bg-white/20" />
-
           {/* Data Retention Settings */}
           <div>
             <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
@@ -428,15 +390,6 @@ const VaultSettings: React.FC = () => {
         message={`Are you sure you want to permanently delete all entries in your ${showClearConfirm} vault? This action cannot be undone.`}
         confirmText="Yes, Clear Vault"
         isDangerous={true}
-      />
-
-      <MasterPasswordModal
-        isOpen={showExportMasterModal}
-        onClose={() => setShowExportMasterModal(false)}
-        onSubmit={handleExportAllVaults}
-        title="Export All Vaults"
-        description="Enter your master password to export all vault data"
-        vaultType="unified"
       />
     </div>
   );
