@@ -8,16 +8,16 @@ import AuthForm from './auth/AuthForm';
 import MFAForm from './auth/MFAForm';
 
 const AuthPage = () => {
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [loading, setLoading] = useState(false);
   const [isMfaChallenge, setIsMfaChallenge] = useState(false);
   const [mfaCode, setMfaCode] = useState('');
   const [showVerificationReminder, setShowVerificationReminder] = useState(false);
+
+  const handleModeChange = (mode: 'signin' | 'signup') => {
+    setAuthMode(mode);
+    setShowVerificationReminder(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center p-6">
@@ -25,15 +25,15 @@ const AuthPage = () => {
         <div className="text-center mb-6">
           <Shield className="w-12 h-12 text-green-400 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-white mb-2">
-            {isMfaChallenge ? 'Enter 2FA Code' : (isSignUp ? 'Create Account' : 'Welcome Back')}
+            {isMfaChallenge ? 'Enter 2FA Code' : (authMode === 'signup' ? 'Create Account' : 'Welcome Back')}
           </h1>
           <p className="text-gray-400">
-            {isMfaChallenge ? 'Enter the code from your authenticator app.' : (isSignUp ? 'Sign up for PW Shield' : 'Sign in to your account')}
+            {isMfaChallenge ? 'Enter the code from your authenticator app.' : (authMode === 'signup' ? 'Sign up for PW Shield' : 'Sign in to your account')}
           </p>
         </div>
 
         {/* Verification Reminder after signup */}
-        {!isSignUp && showVerificationReminder && (
+        {authMode === 'signin' && showVerificationReminder && (
           <div className="mb-5 bg-blue-900/60 border border-blue-500 rounded px-4 py-3 flex items-center justify-between">
             <span className="text-blue-200 text-sm">
               Please check your email and verify your account before logging in.
@@ -62,36 +62,22 @@ const AuthPage = () => {
         ) : (
           <>
             <SocialAuthButtons
-              isSignUp={isSignUp}
+              isSignUp={authMode === 'signup'}
               loading={loading}
               setLoading={setLoading}
             />
 
             <AuthForm
-              isSignUp={isSignUp}
-              email={email}
-              setEmail={setEmail}
-              password={password}
-              setPassword={setPassword}
-              firstName={firstName}
-              setFirstName={setFirstName}
-              lastName={lastName}
-              setLastName={setLastName}
-              showPassword={showPassword}
-              setShowPassword={setShowPassword}
-              loading={loading}
-              setLoading={setLoading}
-              setIsMfaChallenge={setIsMfaChallenge}
-              setIsSignUp={setIsSignUp}
-              setShowVerificationReminder={setShowVerificationReminder}
+              mode={authMode}
+              onModeChange={handleModeChange}
             />
 
             <div className="mt-6 text-center">
               <button
-                onClick={() => { setIsSignUp(!isSignUp); setShowVerificationReminder(false); }}
+                onClick={() => handleModeChange(authMode === 'signin' ? 'signup' : 'signin')}
                 className="text-green-400 hover:text-green-300 text-sm"
               >
-                {isSignUp
+                {authMode === 'signup'
                   ? 'Already have an account? Sign in'
                   : "Don't have an account? Sign up"
                 }
