@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -59,7 +60,7 @@ const VaultSettings: React.FC = () => {
           enableBiometric: data.enable_biometric || false,
           enableClipboardClear: data.enable_clipboard_clear !== false,
           enablePasswordHistory: data.enable_password_history !== false,
-          max_password_history: data.max_password_history?.toString() || '10',
+          maxPasswordHistory: data.max_password_history?.toString() || '10',
         });
       }
     } catch (error) {
@@ -166,9 +167,9 @@ const VaultSettings: React.FC = () => {
     }
   };
 
-  const handleExportAllVaults = (masterPassword: string) => {
+  const handleExportAllVaults = async (masterPassword: string) => {
     setShowExportMasterModal(false);
-    exportAllVaults(masterPassword);
+    await exportAllVaults(masterPassword);
   };
 
   return (

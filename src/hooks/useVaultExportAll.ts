@@ -88,34 +88,71 @@ export const useVaultExportAll = () => {
         updated_at: entry.updated_at
       }));
 
-      // Combine all entries
-      const allEntries = [...decryptedPasswords, ...decryptedApis, ...decryptedCertificates];
-
-      // Create CSV content
+      // Create CSV content with proper handling of different vault types
       const headers = [
         'Vault Type', 'Title', 'Username/API Name/Common Name', 'Password/API Key/Certificate',
         'Website/Endpoint/Issuer', 'Notes/Description/Environment', 'Group', 'Expires At',
         'Is Expired', 'Created At', 'Updated At'
       ];
 
-      const csvRows = allEntries.map(entry => {
+      const csvRows: string[] = [];
+
+      // Add password entries
+      decryptedPasswords.forEach(entry => {
         const row = [
           entry.vault_type,
           entry.title,
-          entry.username || entry.api_name || entry.common_name || '',
-          entry.password || entry.api_key || entry.certificate_file || '',
-          entry.website || entry.endpoint_url || entry.issuer || '',
-          entry.notes || entry.description || entry.environment || '',
+          entry.username,
+          entry.password,
+          entry.website,
+          entry.notes,
           entry.group,
           entry.expires_at,
-          entry.is_expired,
+          entry.is_expired.toString(),
           entry.created_at,
           entry.updated_at
         ];
-        return `"${row.join('","')}"`;
+        csvRows.push(`"${row.join('","')}"`);
+      });
+
+      // Add API entries
+      decryptedApis.forEach(entry => {
+        const row = [
+          entry.vault_type,
+          entry.title,
+          entry.api_name,
+          entry.api_key,
+          entry.endpoint_url,
+          entry.description,
+          entry.group,
+          entry.expires_at,
+          entry.is_expired.toString(),
+          entry.created_at,
+          entry.updated_at
+        ];
+        csvRows.push(`"${row.join('","')}"`);
+      });
+
+      // Add certificate entries
+      decryptedCertificates.forEach(entry => {
+        const row = [
+          entry.vault_type,
+          entry.title,
+          entry.common_name,
+          entry.certificate_file,
+          entry.issuer,
+          entry.environment,
+          entry.group,
+          entry.expires_at,
+          entry.is_expired.toString(),
+          entry.created_at,
+          entry.updated_at
+        ];
+        csvRows.push(`"${row.join('","')}"`);
       });
 
       const csvContent = [headers.join(','), ...csvRows].join('\n');
+      const totalEntries = decryptedPasswords.length + decryptedApis.length + decryptedCertificates.length;
 
       // Download CSV file
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -128,7 +165,7 @@ export const useVaultExportAll = () => {
 
       toast({
         title: "Success",
-        description: `Exported ${allEntries.length} entries from all vaults`,
+        description: `Exported ${totalEntries} entries from all vaults`,
       });
     } catch (error) {
       console.error('Error exporting all vaults:', error);
