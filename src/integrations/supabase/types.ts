@@ -405,6 +405,42 @@ export type Database = {
         }
         Relationships: []
       }
+      subscribers: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          stripe_customer_id: string | null
+          subscribed: boolean
+          subscription_end: string | null
+          subscription_tier: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_master_passwords: {
         Row: {
           created_at: string
@@ -432,6 +468,36 @@ export type Database = {
           use_unified_password?: boolean | null
           user_id?: string
           vault_type?: string | null
+        }
+        Relationships: []
+      }
+      user_usage: {
+        Row: {
+          ai_password_analyses: number | null
+          ai_password_generations: number | null
+          created_at: string
+          id: string
+          updated_at: string
+          usage_date: string
+          user_id: string | null
+        }
+        Insert: {
+          ai_password_analyses?: number | null
+          ai_password_generations?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          usage_date?: string
+          user_id?: string | null
+        }
+        Update: {
+          ai_password_analyses?: number | null
+          ai_password_generations?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          usage_date?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -485,7 +551,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      reset_daily_usage: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
