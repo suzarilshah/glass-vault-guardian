@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import ErrorPage from "./pages/ErrorPage";
 import ProfilePage from "./pages/ProfilePage";
 import VaultPage from "./pages/VaultPage";
 import ApiVaultPage from "./pages/ApiVaultPage";
@@ -27,6 +28,7 @@ const App: React.FC = () => (
             <Route path="/vault" element={<VaultPage />} />
             <Route path="/api-vault" element={<ApiVaultPage />} />
             <Route path="/export" element={<ExportPage />} />
+            <Route path="/error" element={<ErrorPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="*" element={<NotFound />} />
