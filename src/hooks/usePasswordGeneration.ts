@@ -9,24 +9,32 @@ interface PasswordOptions {
   includeUppercase: boolean;
   includeLowercase: boolean;
   includeNumbers: boolean;
-  includeSymbols: boolean;
-  excludeSimilar: boolean;
+  includeSpecialChars: boolean;
+  excludeSimilar?: boolean;
   keywords?: string;
 }
 
 export const usePasswordGeneration = () => {
-  const [generatedPassword, setGeneratedPassword] = useState('');
+  const [password, setPassword] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [options, setOptions] = useState<PasswordOptions>({
+    length: 16,
+    includeUppercase: true,
+    includeLowercase: true,
+    includeNumbers: true,
+    includeSpecialChars: true,
+    excludeSimilar: false,
+  });
   const { toast } = useToast();
   const { canUseFeature, incrementUsage } = useSubscription();
 
-  const generatePassword = (options: PasswordOptions): string => {
+  const generatePasswordString = (options: PasswordOptions): string => {
     let charset = '';
     
     if (options.includeLowercase) charset += 'abcdefghijklmnopqrstuvwxyz';
     if (options.includeUppercase) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     if (options.includeNumbers) charset += '0123456789';
-    if (options.includeSymbols) charset += '!@#$%^&*()_+-=[]{}|;:,.<>?';
+    if (options.includeSpecialChars) charset += '!@#$%^&*()_+-=[]{}|;:,.<>?';
     
     if (options.excludeSimilar) {
       charset = charset.replace(/[il1Lo0O]/g, '');
@@ -36,15 +44,15 @@ export const usePasswordGeneration = () => {
       throw new Error('At least one character type must be selected');
     }
     
-    let password = '';
+    let generatedPassword = '';
     for (let i = 0; i < options.length; i++) {
-      password += charset.charAt(Math.floor(Math.random() * charset.length));
+      generatedPassword += charset.charAt(Math.floor(Math.random() * charset.length));
     }
     
-    return password;
+    return generatedPassword;
   };
 
-  const generateAIPassword = async (options: PasswordOptions) => {
+  const generateAIPassword = async (passwordOptions: PasswordOptions) => {
     // Check if user can use AI generation
     if (!canUseFeature('ai_generation')) {
       toast({
@@ -70,13 +78,13 @@ export const usePasswordGeneration = () => {
     try {
       const { data, error } = await supabase.functions.invoke('generate-ai-passwords', {
         body: {
-          length: options.length,
-          includeUppercase: options.includeUppercase,
-          includeLowercase: options.includeLowercase,
-          includeNumbers: options.includeNumbers,
-          includeSymbols: options.includeSymbols,
-          excludeSimilar: options.excludeSimilar,
-          keywords: options.keywords || '',
+          length: passwordOptions.length,
+          includeUppercase: passwordOptions.includeUppercase,
+          includeLowercase: passwordOptions.includeLowercase,
+          includeNumbers: passwordOptions.includeNumbers,
+          includeSymbols: passwordOptions.includeSpecialChars,
+          excludeSimilar: passwordOptions.excludeSimilar,
+          keywords: passwordOptions.keywords || '',
           count: 1
         }
       });
@@ -84,7 +92,7 @@ export const usePasswordGeneration = () => {
       if (error) throw error;
 
       if (data?.passwords && data.passwords.length > 0) {
-        setGeneratedPassword(data.passwords[0]);
+        setPassword(data.passwords[0]);
         toast({
           title: "AI Password Generated",
           description: "Grok 3 has created a secure password for you",
@@ -100,8 +108,8 @@ export const usePasswordGeneration = () => {
       
       // Fallback to standard generation
       try {
-        const password = generatePassword(options);
-        setGeneratedPassword(password);
+        const generatedPassword = generatePasswordString(passwordOptions);
+        setPassword(generatedPassword);
       } catch (fallbackError) {
         toast({
           title: "Generation Error",
@@ -114,10 +122,10 @@ export const usePasswordGeneration = () => {
     }
   };
 
-  const generateStandardPassword = (options: PasswordOptions) => {
+  const generatePassword = () => {
     try {
-      const password = generatePassword(options);
-      setGeneratedPassword(password);
+      const generatedPassword = generatePasswordString(options);
+      setPassword(generatedPassword);
       toast({
         title: "Password Generated",
         description: "A secure password has been created",
@@ -131,11 +139,39 @@ export const usePasswordGeneration = () => {
     }
   };
 
+  const copyToClipboard = async () => {
+    if (!password) {
+      toast({
+        title: "Error",
+        description: "No password to copy",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(password);
+      toast({
+        title: "Copied!",
+        description: "Password copied to clipboard",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to copy password",
+        variant: "destructive"
+      });
+    }
+  };
+
   return {
-    generatedPassword,
-    setGeneratedPassword,
+    password,
+    setPassword,
+    options,
+    setOptions,
     isGenerating,
+    generatePassword,
     generateAIPassword,
-    generateStandardPassword,
+    copyToClipboard,
   };
 };
