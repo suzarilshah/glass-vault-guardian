@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Shield, Lock, Key, Database, Zap, Eye, Users, Globe } from 'lucide-react';
+import { Shield, Lock, Key, Database, Zap, Eye, Users, Globe, Check, X } from 'lucide-react';
 
 interface LandingPageProps {
   onShowAuth: () => void;
@@ -49,6 +49,51 @@ const LandingPage: React.FC<LandingPageProps> = ({ onShowAuth }) => {
     { number: "0", label: "Data Breaches" }
   ];
 
+  const pricingPlans = [
+    {
+      name: "Free",
+      price: "$0",
+      period: "forever",
+      description: "Perfect for trying out our AI-powered security features",
+      features: [
+        "AI Password Generator (5/day)",
+        "AI Password Analyzer (5/day)",
+        "Basic security insights",
+        "Daily usage resets at 12 AM GMT"
+      ],
+      limitations: [
+        "No Password Vault access",
+        "No API Vault access", 
+        "No Certificate Vault access",
+        "No import/export features",
+        "No group organization"
+      ],
+      buttonText: "Get Started Free",
+      popular: false
+    },
+    {
+      name: "Pro",
+      price: "$6",
+      period: "per month",
+      description: "Complete password security solution for individuals and teams",
+      features: [
+        "Unlimited AI Password Generator",
+        "Unlimited AI Password Analyzer", 
+        "Secure Password Vault",
+        "API Keys & Secrets Vault",
+        "Certificate Management Vault",
+        "Auto-lock Vault timer",
+        "Advanced group organization",
+        "Import/Export functionality",
+        "Breach monitoring",
+        "Priority support"
+      ],
+      limitations: [],
+      buttonText: "Start Free Trial",
+      popular: true
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
       {/* Hero Section */}
@@ -62,7 +107,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onShowAuth }) => {
             </div>
             
             <h1 className="text-6xl font-bold text-white mb-6 bg-gradient-to-r from-white via-green-400 to-white bg-clip-text text-transparent">
-              AI PW Shield
+              Shielder
             </h1>
             
             <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
@@ -104,11 +149,79 @@ const LandingPage: React.FC<LandingPageProps> = ({ onShowAuth }) => {
         </div>
       </div>
 
+      {/* Pricing Section */}
+      <div className="max-w-6xl mx-auto px-6 py-20">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold text-white mb-4">
+            Choose Your Security Level
+          </h2>
+          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+            Start free and upgrade when you need advanced vault features and unlimited AI capabilities.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-20">
+          {pricingPlans.map((plan, index) => (
+            <Card key={index} className={`glass-card p-8 bg-white/5 backdrop-blur-xl relative ${
+              plan.popular 
+                ? 'border-green-400/50 bg-gradient-to-br from-green-500/10 to-blue-500/10' 
+                : 'border-white/20'
+            }`}>
+              {plan.popular && (
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                  <span className="bg-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold">
+                    Most Popular
+                  </span>
+                </div>
+              )}
+              
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
+                <div className="flex items-baseline justify-center mb-2">
+                  <span className="text-4xl font-bold text-white">{plan.price}</span>
+                  <span className="text-gray-400 ml-2">/{plan.period}</span>
+                </div>
+                <p className="text-gray-400 text-sm">{plan.description}</p>
+              </div>
+
+              <div className="space-y-4 mb-8">
+                {plan.features.map((feature, featureIndex) => (
+                  <div key={featureIndex} className="flex items-center">
+                    <Check className="w-5 h-5 text-green-400 mr-3 flex-shrink-0" />
+                    <span className="text-gray-300 text-sm">{feature}</span>
+                  </div>
+                ))}
+                
+                {plan.limitations.map((limitation, limitIndex) => (
+                  <div key={limitIndex} className="flex items-center">
+                    <X className="w-5 h-5 text-red-400 mr-3 flex-shrink-0" />
+                    <span className="text-gray-400 text-sm">{limitation}</span>
+                  </div>
+                ))}
+              </div>
+
+              <Button
+                onClick={onShowAuth}
+                className={`w-full ${
+                  plan.popular
+                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                    : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+                }`}
+                variant={plan.popular ? 'default' : 'outline'}
+                size="lg"
+              >
+                {plan.buttonText}
+              </Button>
+            </Card>
+          ))}
+        </div>
+      </div>
+
       {/* Features Section */}
       <div className="max-w-6xl mx-auto px-6 py-20">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-white mb-4">
-            Why Choose AI PW Shield?
+            Why Choose Shielder?
           </h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
             Advanced security features designed to protect your digital life with cutting-edge AI technology.
@@ -185,7 +298,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onShowAuth }) => {
           Ready to Secure Your Digital Life?
         </h2>
         <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">
-          Join thousands of users who trust AI PW Shield to protect their most important accounts. 
+          Join thousands of users who trust Shielder to protect their most important accounts. 
           Get started today with our free plan.
         </p>
         
@@ -210,7 +323,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onShowAuth }) => {
         </div>
         
         <p className="text-gray-500 text-sm mt-6">
-          No credit card required • Free forever plan available • Enterprise plans starting at $10/month
+          No credit card required • Free forever plan available • Pro plan just $6/month
         </p>
       </div>
     </div>

@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 interface AIAnalysisResponse {
   insights: string;
@@ -27,37 +28,23 @@ export const useAIPasswordAnalysis = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysisResponse | null>(null);
   const { toast } = useToast();
+  const { canUseFeature, incrementUsage, createCheckout } = useSubscription();
 
   const analyzePasswordWithAI = async (password: string, currentAnalysis: CurrentAnalysis) => {
-    // Rate limiting logic
-    const RATE_LIMIT_COUNT = 10;
-    const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-
-    try {
-      const analysisTimestamps: number[] = JSON.parse(localStorage.getItem('aiAnalysisTimestamps') || '[]');
-      const now = Date.now();
-
-      const recentTimestamps = analysisTimestamps.filter(
-        (timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS
-      );
-
-      if (recentTimestamps.length >= RATE_LIMIT_COUNT) {
-        toast({
-          title: "Rate Limit Exceeded",
-          description: "You have made too many requests. Please try again in a minute.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const newTimestamps = [...recentTimestamps, now];
-      localStorage.setItem('aiAnalysisTimestamps', JSON.stringify(newTimestamps));
-    } catch (error) {
-      console.error("Error with rate limiting logic:", error);
+    // Check if user can use AI analysis
+    if (!canUseFeature('ai_analysis')) {
       toast({
-        title: "Application Error",
-        description: "Could not apply rate limiting. Please try again.",
+        title: "Daily Limit Reached",
+        description: "You've reached your daily AI analysis limit. Upgrade to Pro for unlimited access.",
         variant: "destructive",
+        action: (
+          <button 
+            onClick={createCheckout}
+            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm"
+          >
+            Upgrade
+          </button>
+        ),
       });
       return;
     }
@@ -66,6 +53,17 @@ export const useAIPasswordAnalysis = () => {
       toast({
         title: "Error",
         description: "Please enter a password to analyze",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Try to increment usage first
+    const canProceed = await incrementUsage('ai_password_analyses');
+    if (!canProceed) {
+      toast({
+        title: "Usage Error",
+        description: "Unable to process request. Please try again.",
         variant: "destructive",
       });
       return;
