@@ -1,16 +1,28 @@
 
-import { useNavigate, useRouteError } from "react-router-dom";
-import { useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Home, RefreshCw } from "lucide-react";
 
 const ErrorPage = () => {
   const navigate = useNavigate();
-  const error = useRouteError() as Error;
+  const location = useLocation();
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    console.error("Application Error:", error);
-  }, [error]);
+    // Try to get error from location state
+    const locationError = location.state?.error;
+    if (locationError) {
+      const errorObj = locationError instanceof Error ? locationError : new Error(locationError.toString());
+      setError(errorObj);
+      console.error("Application Error:", errorObj);
+    } else {
+      // If no error in state, create a generic error
+      const genericError = new Error("An unexpected error occurred");
+      setError(genericError);
+      console.error("Application Error: No specific error provided");
+    }
+  }, [location.state]);
 
   const handleRefresh = () => {
     window.location.reload();
