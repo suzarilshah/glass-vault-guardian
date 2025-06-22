@@ -269,17 +269,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onShowAuth }) => {
             </div>
             
             <div className="relative">
-              <Card className="glass-card p-8 bg-gradient-to-br from-green-500/10 to-blue-500/10 border-green-400/30">
+              <Card className="p-8 bg-gradient-to-br from-green-500/20 to-blue-500/20 border-green-400/50 backdrop-blur-sm">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-300">Password Strength</span>
+                    <span className="text-gray-200">Password Strength</span>
                     <span className="text-green-400 font-semibold">Very Strong</span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-2">
                     <div className="bg-gradient-to-r from-green-400 to-green-500 h-2 rounded-full w-full"></div>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400">Encryption Status</span>
+                    <span className="text-gray-300">Encryption Status</span>
                     <span className="text-green-400 flex items-center">
                       <Lock className="w-4 h-4 mr-1" />
                       AES-256 Encrypted

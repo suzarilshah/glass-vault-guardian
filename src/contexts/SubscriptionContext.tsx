@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -80,21 +79,45 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const createCheckout = async () => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to upgrade to Pro",
+        variant: "destructive",
+      });
+      return;
+    }
 
+    setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout');
-      if (error) throw error;
+      
+      if (error) {
+        console.error('Checkout error:', error);
+        throw new Error(error.message || 'Failed to create checkout session');
+      }
+      
+      if (!data?.url) {
+        throw new Error('No checkout URL received');
+      }
       
       // Open Stripe checkout in new tab
       window.open(data.url, '_blank');
+      
+      toast({
+        title: "Redirecting to Checkout",
+        description: "Opening Stripe checkout in a new tab...",
+      });
     } catch (error) {
       console.error('Error creating checkout:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast({
-        title: "Error",
-        description: "Failed to create checkout session",
+        title: "Payment Error",
+        description: `Failed to start checkout: ${errorMessage}`,
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
