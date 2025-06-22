@@ -18,7 +18,7 @@ export const usePasswordGeneration = () => {
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
-  const { canUseFeature, incrementUsage, createCheckout } = useSubscription();
+  const { canUseFeature, incrementUsage } = useSubscription();
 
   const generatePassword = (options: PasswordOptions): string => {
     let charset = '';
@@ -51,14 +51,6 @@ export const usePasswordGeneration = () => {
         title: "Daily Limit Reached",
         description: "You've reached your daily AI generation limit. Upgrade to Pro for unlimited access.",
         variant: "destructive",
-        action: (
-          <button 
-            onClick={createCheckout}
-            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm"
-          >
-            Upgrade
-          </button>
-        ),
       });
       return;
     }
