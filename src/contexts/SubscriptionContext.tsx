@@ -5,8 +5,10 @@ import { useToast } from '@/hooks/use-toast';
 
 interface SubscriptionData {
   subscribed: boolean;
-  subscription_tier: 'free' | 'pro';
+  subscription_tier: 'free' | 'pro' | 'trial';
   subscription_end?: string | null;
+  is_trial?: boolean;
+  trial_end?: string | null;
 }
 
 interface UsageData {
@@ -24,6 +26,8 @@ interface SubscriptionContextType {
   openCustomerPortal: () => Promise<void>;
   canUseFeature: (feature: 'ai_generation' | 'ai_analysis' | 'vault') => boolean;
   incrementUsage: (type: 'ai_password_generations' | 'ai_password_analyses') => Promise<boolean>;
+  isTrialActive: () => boolean;
+  getDaysRemainingInTrial: () => number;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -140,24 +144,49 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
-  const canUseFeature = (feature: 'ai_generation' | 'ai_analysis' | 'vault'): boolean => {
+  const canUseFeature = (feature: 'ai_generation' | 'ai_analysis' | 'vault') => {
     if (!subscription) return false;
     
-    if (subscription.subscription_tier === 'pro') return true;
-    
-    if (feature === 'vault') return false;
-    
-    if (!usage) return true; // Allow if usage not loaded yet
-    
-    const limit = 5;
-    if (feature === 'ai_generation') {
-      return usage.ai_password_generations < limit;
+    // Pro users can use all features
+    if (subscription.subscribed && subscription.subscription_tier === 'pro') {
+      return true;
     }
-    if (feature === 'ai_analysis') {
-      return usage.ai_password_analyses < limit;
+    
+    // Trial users get pro features during trial period
+    if (subscription.subscription_tier === 'trial' && isTrialActive()) {
+      return true;
+    }
+    
+    // Free users have limited access
+    if (subscription.subscription_tier === 'free' || (subscription.subscription_tier === 'trial' && !isTrialActive())) {
+      if (feature === 'vault') return true; // Basic vault access for free users
+      
+      if (!usage) return false;
+      
+      if (feature === 'ai_generation') {
+        return usage.ai_password_generations < 3; // 3 generations per day for free
+      }
+      
+      if (feature === 'ai_analysis') {
+        return usage.ai_password_analyses < 3; // 3 analyses per day for free
+      }
     }
     
     return false;
+  };
+
+  const isTrialActive = () => {
+    if (!subscription || !subscription.is_trial || !subscription.trial_end) return false;
+    return new Date(subscription.trial_end) > new Date();
+  };
+
+  const getDaysRemainingInTrial = () => {
+    if (!subscription || !subscription.trial_end) return 0;
+    const trialEnd = new Date(subscription.trial_end);
+    const now = new Date();
+    const diffTime = trialEnd.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
   };
 
   const incrementUsage = async (type: 'ai_password_generations' | 'ai_password_analyses'): Promise<boolean> => {
@@ -208,6 +237,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       openCustomerPortal,
       canUseFeature,
       incrementUsage,
+      isTrialActive,
+      getDaysRemainingInTrial,
     }}>
       {children}
     </SubscriptionContext.Provider>
