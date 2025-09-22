@@ -16,8 +16,6 @@ import { analyzePasswordStrength } from '@/utils/passwordStrength';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/components/ui/input-otp";
 import { ShieldCheck } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import MasterPasswordSettings from '@/components/vault/MasterPasswordSettings';
-import VaultSettings from '@/components/vault/VaultSettings';
 
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
@@ -397,7 +395,7 @@ const ProfilePage = () => {
         </div>
 
         <Tabs defaultValue="personal" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8 bg-white/10 backdrop-blur-xl border-white/20 overflow-x-auto">
+          <TabsList className="grid w-full grid-cols-2 mb-8 bg-white/10 backdrop-blur-xl border-white/20 overflow-x-auto">
             <TabsTrigger value="personal" className="flex items-center gap-2 text-white data-[state=active]:bg-white data-[state=active]:text-gray-900 text-xs md:text-sm whitespace-nowrap">
               <User className="w-4 h-4" />
               Personal
@@ -405,10 +403,6 @@ const ProfilePage = () => {
             <TabsTrigger value="account-security" className="flex items-center gap-2 text-white data-[state=active]:bg-white data-[state=active]:text-gray-900 text-xs md:text-sm whitespace-nowrap">
               <Lock className="w-4 h-4" />
               Account Security
-            </TabsTrigger>
-            <TabsTrigger value="vault-settings" className="flex items-center gap-2 text-white data-[state=active]:bg-white data-[state=active]:text-gray-900 text-xs md:text-sm whitespace-nowrap">
-              <Settings className="w-4 h-4" />
-              Vault Settings
             </TabsTrigger>
           </TabsList>
 
@@ -610,8 +604,6 @@ const ProfilePage = () => {
                 )}
               </Card>
 
-              {/* Master Password Settings */}
-              <MasterPasswordSettings profile={profile} />
 
               {/* 2FA Section */}
               <Card className="glass-card p-4 md:p-6 bg-white/5 backdrop-blur-xl border-white/20">
@@ -682,9 +674,6 @@ const ProfilePage = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="vault-settings">
-            <VaultSettings />
-          </TabsContent>
         </Tabs>
       </div>
 
