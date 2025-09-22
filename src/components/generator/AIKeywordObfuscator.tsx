@@ -8,7 +8,7 @@ import { Brain, Sparkles, Copy, Save, RefreshCw, BarChart3 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { obfuscateKeyword } from '@/utils/passwordUtils';
-import { useSubscription } from '@/contexts/SubscriptionContext';
+
 import SavePasswordModal from '@/components/SavePasswordModal';
 
 interface AIKeywordObfuscatorProps {
@@ -48,7 +48,7 @@ const AIKeywordObfuscator: React.FC<AIKeywordObfuscatorProps> = ({
     length: 12,
   });
   const { toast } = useToast();
-  const { canUseFeature, incrementUsage } = useSubscription();
+  
 
   const generateAIPasswords = async () => {
     if (!keywords.trim()) {
@@ -56,16 +56,6 @@ const AIKeywordObfuscator: React.FC<AIKeywordObfuscatorProps> = ({
         title: "Error",
         description: "Please enter at least one keyword",
         variant: "destructive"
-      });
-      return;
-    }
-
-    // Check if user can use AI generation
-    if (!canUseFeature('ai_generation')) {
-      toast({
-        title: "Daily Limit Reached",
-        description: "You've reached your daily AI generation limit. Upgrade to Pro for unlimited access.",
-        variant: "destructive",
       });
       return;
     }
@@ -83,9 +73,7 @@ const AIKeywordObfuscator: React.FC<AIKeywordObfuscatorProps> = ({
         throw error;
       }
 
-      // Only increment usage if AI generation was successful
       if (data?.suggestions && data.suggestions.length > 0) {
-        await incrementUsage('ai_password_generations');
         setSuggestions(data.suggestions);
         toast({
           title: "AI Passwords Generated",

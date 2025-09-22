@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSubscription } from '@/contexts/SubscriptionContext';
 import PasswordGenerator from '@/components/PasswordGenerator';
 import PasswordVault from '@/components/PasswordVault';
 import ApiVault from '@/components/ApiVault';
@@ -10,13 +9,10 @@ import AuthPage from '@/components/AuthPage';
 import LandingPage from '@/components/LandingPage';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import UpgradePrompt from '@/components/UpgradePrompt';
-import UsageMeter from '@/components/UsageMeter';
 import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const { user, loading } = useAuth();
-  const { subscription, canUseFeature } = useSubscription();
   const [currentView, setCurrentView] = useState<'generator' | 'vault' | 'api-vault' | 'certificate-vault'>('generator');
   const [showAuth, setShowAuth] = useState(false);
   const [masterPasswords, setMasterPasswords] = useState<{
@@ -125,8 +121,6 @@ const Index = () => {
     return <LandingPage onShowAuth={() => setShowAuth(true)} />;
   }
 
-  // Check if user can access vault features
-  const canAccessVault = canUseFeature('vault');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex flex-col">
@@ -147,69 +141,42 @@ const Index = () => {
                 </h1>
                 <p className="text-gray-400">AI-powered password security and protection</p>
               </div>
-              <UsageMeter />
+              
               <PasswordGenerator />
             </div>
           )}
           
           {currentView === 'vault' && (
-            <>
-              {canAccessVault ? (
-                <PasswordVault 
-                  masterPassword={getMasterPasswordForVault('password')} 
-                  onMasterPasswordSet={(password) => handleMasterPasswordSet(password, 'password')}
-                  useUnifiedPassword={useUnifiedPassword}
-                  unifiedLockTimeoutMinutes={useUnifiedPassword ? unifiedLockTimeoutMinutes : undefined}
-                  onUnifiedTimeoutChange={useUnifiedPassword ? handleUnifiedTimeoutChange : undefined}
-                  onUnifiedMasterPasswordClear={useUnifiedPassword ? handleUnifiedMasterPasswordClear : undefined}
-                />
-              ) : (
-                <UpgradePrompt 
-                  feature="Password Vault" 
-                  description="Securely store and organize your passwords with military-grade encryption. Access your passwords anywhere with master password protection."
-                />
-              )}
-            </>
+            <PasswordVault 
+              masterPassword={getMasterPasswordForVault('password')} 
+              onMasterPasswordSet={(password) => handleMasterPasswordSet(password, 'password')}
+              useUnifiedPassword={useUnifiedPassword}
+              unifiedLockTimeoutMinutes={useUnifiedPassword ? unifiedLockTimeoutMinutes : undefined}
+              onUnifiedTimeoutChange={useUnifiedPassword ? handleUnifiedTimeoutChange : undefined}
+              onUnifiedMasterPasswordClear={useUnifiedPassword ? handleUnifiedMasterPasswordClear : undefined}
+            />
           )}
 
           {currentView === 'api-vault' && (
-            <>
-              {canAccessVault ? (
-                <ApiVault 
-                  masterPassword={getMasterPasswordForVault('api')} 
-                  onMasterPasswordSet={(password) => handleMasterPasswordSet(password, 'api')}
-                  useUnifiedPassword={useUnifiedPassword}
-                  unifiedLockTimeoutMinutes={useUnifiedPassword ? unifiedLockTimeoutMinutes : undefined}
-                  onUnifiedTimeoutChange={useUnifiedPassword ? handleUnifiedTimeoutChange : undefined}
-                  onUnifiedMasterPasswordClear={useUnifiedPassword ? handleUnifiedMasterPasswordClear : undefined}
-                />
-              ) : (
-                <UpgradePrompt 
-                  feature="API Vault" 
-                  description="Safely store your API keys, secrets, and tokens with organized groups and environment management. Never lose track of your API credentials again."
-                />
-              )}
-            </>
+            <ApiVault 
+              masterPassword={getMasterPasswordForVault('api')} 
+              onMasterPasswordSet={(password) => handleMasterPasswordSet(password, 'api')}
+              useUnifiedPassword={useUnifiedPassword}
+              unifiedLockTimeoutMinutes={useUnifiedPassword ? unifiedLockTimeoutMinutes : undefined}
+              onUnifiedTimeoutChange={useUnifiedPassword ? handleUnifiedTimeoutChange : undefined}
+              onUnifiedMasterPasswordClear={useUnifiedPassword ? handleUnifiedMasterPasswordClear : undefined}
+            />
           )}
 
           {currentView === 'certificate-vault' && (
-            <>
-              {canAccessVault ? (
-                <CertificateVault 
-                  masterPassword={getMasterPasswordForVault('certificate')} 
-                  onMasterPasswordSet={(password) => handleMasterPasswordSet(password, 'certificate')}
-                  useUnifiedPassword={useUnifiedPassword}
-                  unifiedLockTimeoutMinutes={useUnifiedPassword ? unifiedLockTimeoutMinutes : undefined}
-                  onUnifiedTimeoutChange={useUnifiedPassword ? handleUnifiedTimeoutChange : undefined}
-                  onUnifiedMasterPasswordClear={useUnifiedPassword ? handleUnifiedMasterPasswordClear : undefined}
-                />
-              ) : (
-                <UpgradePrompt 
-                  feature="Certificate Vault" 
-                  description="Manage your SSL certificates, private keys, and digital certificates with expiration tracking and secure storage."
-                />
-              )}
-            </>
+            <CertificateVault 
+              masterPassword={getMasterPasswordForVault('certificate')} 
+              onMasterPasswordSet={(password) => handleMasterPasswordSet(password, 'certificate')}
+              useUnifiedPassword={useUnifiedPassword}
+              unifiedLockTimeoutMinutes={useUnifiedPassword ? unifiedLockTimeoutMinutes : undefined}
+              onUnifiedTimeoutChange={useUnifiedPassword ? handleUnifiedTimeoutChange : undefined}
+              onUnifiedMasterPasswordClear={useUnifiedPassword ? handleUnifiedMasterPasswordClear : undefined}
+            />
           )}
         </div>
       </div>

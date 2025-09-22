@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useSubscription } from '@/contexts/SubscriptionContext';
+
 
 interface PasswordOptions {
   length: number;
@@ -26,7 +26,7 @@ export const usePasswordGeneration = () => {
     excludeSimilar: false,
   });
   const { toast } = useToast();
-  const { canUseFeature, incrementUsage } = useSubscription();
+  
 
   const generatePasswordString = (options: PasswordOptions): string => {
     let charset = '';
@@ -53,27 +53,6 @@ export const usePasswordGeneration = () => {
   };
 
   const generateAIPassword = async (passwordOptions: PasswordOptions) => {
-    // Check if user can use AI generation
-    if (!canUseFeature('ai_generation')) {
-      toast({
-        title: "Daily Limit Reached",
-        description: "You've reached your daily AI generation limit. Upgrade to Pro for unlimited access.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Try to increment usage first
-    const canProceed = await incrementUsage('ai_password_generations');
-    if (!canProceed) {
-      toast({
-        title: "Usage Error",
-        description: "Unable to process request. Please try again.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-ai-passwords', {
