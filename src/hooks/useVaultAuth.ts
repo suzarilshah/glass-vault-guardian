@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { hashMasterPassword } from '@/utils/encryption';
+import { hashMasterPassword, verifyMasterPassword } from '@/utils/encryption';
 
 interface UseVaultAuthProps {
   setMasterPassword: (password: string | null) => void;
@@ -28,9 +28,9 @@ export const useVaultAuth = ({
   const { toast } = useToast();
 
   const handleMasterPasswordSubmit = useCallback(async (password: string, isCreatingMaster: boolean) => {
-    const hashedPassword = hashMasterPassword(password);
-    
     if (isCreatingMaster) {
+      const hashedPassword = hashMasterPassword(password);
+      
       const { error } = await supabase
         .from('user_master_passwords')
         .insert({ 
@@ -60,8 +60,8 @@ export const useVaultAuth = ({
         .maybeSingle();
 
       if (!unifiedError && unifiedData) {
-        // User has unified password, check against it
-        if (unifiedData.master_password_hash === hashedPassword) {
+        // User has unified password, verify using bcrypt
+        if (verifyMasterPassword(password, unifiedData.master_password_hash)) {
           setMasterPassword(password);
           setShowMasterModal(false);
           onMasterPasswordSet?.(password);
@@ -86,7 +86,7 @@ export const useVaultAuth = ({
           .eq('use_unified_password', false)
           .maybeSingle();
 
-        if (!error && data && data.master_password_hash === hashedPassword) {
+        if (!error && data && verifyMasterPassword(password, data.master_password_hash)) {
           setMasterPassword(password);
           setShowMasterModal(false);
           onMasterPasswordSet?.(password);

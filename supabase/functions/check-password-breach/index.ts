@@ -37,8 +37,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Checking password breach for length: ${password.length}`);
-
     // Check cache first or load if expired
     const now = Date.now();
     if (!passwordCache || (now - cacheTimestamp) > CACHE_TTL) {
@@ -57,8 +55,6 @@ Deno.serve(async (req) => {
         ? 'Password found in breach database'
         : 'Password not found in breach database'
     };
-
-    console.log(`Password check result: ${isBreached ? 'BREACHED' : 'SAFE'}`);
 
     return new Response(
       JSON.stringify(response),

@@ -1,5 +1,6 @@
 
 import CryptoJS from 'crypto-js';
+import bcrypt from 'bcryptjs';
 
 export const encryptPassword = (password: string, masterPassword: string): string => {
   return CryptoJS.AES.encrypt(password, masterPassword).toString();
@@ -14,6 +15,13 @@ export const decryptPassword = (encryptedPassword: string, masterPassword: strin
   }
 };
 
+// Use bcrypt with 12 rounds for secure password hashing
 export const hashMasterPassword = (masterPassword: string): string => {
-  return CryptoJS.SHA256(masterPassword).toString();
+  const salt = bcrypt.genSaltSync(12);
+  return bcrypt.hashSync(masterPassword, salt);
+};
+
+// Verify master password against hash
+export const verifyMasterPassword = (masterPassword: string, hash: string): boolean => {
+  return bcrypt.compareSync(masterPassword, hash);
 };
