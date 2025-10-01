@@ -7,10 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
@@ -565,10 +565,10 @@ export type Database = {
       get_expiring_trials: {
         Args: { days_before?: number }
         Returns: {
-          user_id: string
+          days_remaining: number
           email: string
           trial_end: string
-          days_remaining: number
+          user_id: string
         }[]
       }
       reset_daily_usage: {
